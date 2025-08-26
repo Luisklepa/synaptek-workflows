@@ -1,0 +1,172 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// --- Procesa los datos crudos, los transforma, calcula indicadores y devuelve todo el histórico enriquecido ---\n\n// 1. Si los datos vienen con claves numéricas, los convertimos\nif (items[0]?.json?.['0']) {\n  items = items.map(item => {\n    const k = item.json;\n    return {\n      json: {\n        time:   new Date(Number(k['0'])).toISOString(),\n        open:   parseFloat(k['1']),\n        high:   parseFloat(k['2']),\n        low:    parseFloat(k['3']),\n        close:  parseFloat(k['4']),\n        volume: parseFloat(k['5']),\n      }\n    }\n  });\n}\n\n// --- Crea arrays de variables ---\nconst closeArray  = items.map(i => i.json.close);\nconst highArray   = items.map(i => i.json.high);\nconst lowArray    = items.map(i => i.json.low);\nconst openArray   = items.map(i => i.json.open);\nconst volumeArray = items.map(i => i.json.volume);\n\n// --- Funciones de indicadores (igual que tu código original) ---\nfunction calcEMA(valuesArray, period) {\n  const multiplier = 2 / (period + 1);\n  const result = Array(valuesArray.length).fill(undefined);\n  const sma = valuesArray.slice(0, period).reduce((a,b) => a+b, 0) / period;\n  result[period - 1] = sma;\n  for (let j = period; j < valuesArray.length; j++) {\n    result[j] = (valuesArray[j] - result[j-1]) * multiplier + result[j-1];\n  }\n  return result;\n}\nfunction calcRSIWilder(valuesArray, period) {\n  const result = Array(valuesArray.length).fill(undefined);\n  let gains = 0, losses = 0;\n  for (let k = 1; k <= period; k++) {\n    const diff = valuesArray[k] - valuesArray[k-1];\n    if (diff > 0) gains += diff; else losses -= diff;\n  }\n  let avgGain = gains / period, avgLoss = losses / period;\n  for (let m = period + 1; m < valuesArray.length; m++) {\n    const d = valuesArray[m] - valuesArray[m-1];\n    avgGain = ((avgGain * (period - 1)) + Math.max(d,0)) / period;\n    avgLoss = ((avgLoss * (period - 1)) + Math.max(-d,0)) / period;\n    const rs = avgLoss === 0 ? 0 : avgGain / avgLoss;\n    result[m] = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));\n  }\n  return result;\n}\nfunction calcBBVolATR(closeArr, highArr, lowArr, volArr, period, multBB) {\n  const bbMidArr = Array(closeArr.length).fill(undefined);\n  const bbUpperArr = Array(closeArr.length).fill(undefined);\n  const bbLowerArr = Array(closeArr.length).fill(undefined);\n  const volAvgArr = Array(closeArr.length).fill(undefined);\n  const atrArr = Array(closeArr.length).fill(undefined);\n\n  let sumClose = 0, sumCloseSq = 0, sumVol = 0, prevClose = closeArr[0], sumATR = 0;\n  for(let n=0;n<closeArr.length;n++) {\n    sumClose += closeArr[n];\n    sumCloseSq += closeArr[n]*closeArr[n];\n    sumVol += volArr[n];\n    const trueRange = Math.max(\n      highArr[n]-lowArr[n],\n      Math.abs(highArr[n]-prevClose),\n      Math.abs(lowArr[n]-prevClose)\n    );\n    if (n === 0) sumATR = trueRange;\n    else sumATR += trueRange;\n\n    if (n >= period) {\n      sumClose -= closeArr[n-period];\n      sumCloseSq -= closeArr[n-period]*closeArr[n-period];\n      sumVol -= volArr[n-period];\n      sumATR -= Math.max(\n        highArr[n-period]-lowArr[n-period],\n        Math.abs(highArr[n-period]-(n-period-1>=0?closeArr[n-period-1]:prevClose)),\n        Math.abs(lowArr[n-period]-(n-period-1>=0?closeArr[n-period-1]:prevClose))\n      );\n    }\n    if (n >= period-1) {\n      const mean = sumClose/period;\n      const stdev = Math.sqrt(sumCloseSq/period-mean*mean);\n      bbMidArr[n] = mean;\n      bbUpperArr[n] = mean+multBB*stdev;\n      bbLowerArr[n] = mean-multBB*stdev;\n      volAvgArr[n] = sumVol/period;\n      atrArr[n] = sumATR/period;\n    }\n    prevClose = closeArr[n];\n  }\n  return {\n    mid: bbMidArr,\n    upper: bbUpperArr,\n    lower: bbLowerArr,\n    volAvg: volAvgArr,\n    atr: atrArr\n  };\n}\nfunction calcMACD(valuesArr, fast = 12, slow = 26, signal = 9) {\n  const emaFastArr = calcEMA(valuesArr, fast);\n  const emaSlowArr = calcEMA(valuesArr, slow);\n  const macdArr    = valuesArr.map((_, i) => (\n    emaFastArr[i] !== undefined && emaSlowArr[i] !== undefined\n      ? emaFastArr[i] - emaSlowArr[i]\n      : undefined\n  ));\n  const signalArr = calcEMA(macdArr.map(v=>v===undefined?0:v), signal);\n  const histArr = macdArr.map((v,i)=>(\n    v !== undefined && signalArr[i] !== undefined\n      ? v - signalArr[i]\n      : undefined\n  ));\n  return { macd: macdArr, signal: signalArr, hist: histArr };\n}\nfunction calcADX(highArr, lowArr, closeArr, period=14) {\n  const len = highArr.length;\n  const dxArr = Array(len).fill(undefined),\n        adxArr = Array(len).fill(undefined),\n        plusDIarr = Array(len).fill(undefined),\n        minusDIarr = Array(len).fill(undefined);\n\n  let trList = [], pdmList = [], ndmList = [];\n  for(let i=1;i<len;i++) {\n    const tr = Math.max(\n      highArr[i] - lowArr[i],\n      Math.abs(highArr[i] - closeArr[i-1]),\n      Math.abs(lowArr[i] - closeArr[i-1])\n    );\n    trList.push(tr);\n    const pdm = (highArr[i]-highArr[i-1]) > (lowArr[i-1]-lowArr[i]) && (highArr[i]-highArr[i-1])>0 ? highArr[i]-highArr[i-1]:0;\n    const ndm = (lowArr[i-1]-lowArr[i]) > (highArr[i]-highArr[i-1]) && (lowArr[i-1]-lowArr[i])>0 ? lowArr[i-1]-lowArr[i]:0;\n    pdmList.push(pdm); ndmList.push(ndm);\n  }\n  function smma(arr, period) {\n    let o = Array(arr.length).fill(undefined);\n    let sum = arr.slice(0, period).reduce((a,b)=>a+b, 0);\n    o[period-1] = sum/period;\n    for(let z=period;z<arr.length;z++)\n      o[z] = ((o[z-1]*(period-1))+arr[z])/period;\n    return o;\n  }\n  const atrArr = smma(trList, period);\n  const pdiArr = smma(pdmList, period).map((v,i)=>v!==undefined && atrArr[i]!==undefined?100*v/atrArr[i]:undefined);\n  const ndiArr = smma(ndmList, period).map((v,i)=>v!==undefined && atrArr[i]!==undefined?100*v/atrArr[i]:undefined);\n  for(let j=period-1;j<atrArr.length;j++) {\n    if (pdiArr[j]!==undefined && ndiArr[j]!==undefined) {\n      const sum = pdiArr[j]+ndiArr[j];\n      const dx = sum===0 ? 0 : 100*Math.abs(pdiArr[j]-ndiArr[j])/sum;\n      dxArr[j+1] = dx;\n      plusDIarr[j+1] = pdiArr[j];\n      minusDIarr[j+1] = ndiArr[j];\n    }\n  }\n  const adxSmoothed = smma(dxArr.map(x=>x===undefined?0:x),period);\n  for(let k=2*period-1;k<adxSmoothed.length;k++) {\n    adxArr[k+1] = adxSmoothed[k];\n  }\n  return { adx: adxArr, plusDI: plusDIarr, minusDI: minusDIarr };\n}\nfunction calcSupertrend(highArr, lowArr, closeArr, period=10, mult=3) {\n  const atrArr = calcEMA(highArr.map((_, i) => {\n    return Math.max(\n      highArr[i] - lowArr[i],\n      Math.abs(highArr[i] - closeArr[i-1] || highArr[i]-lowArr[i]),\n      Math.abs(lowArr[i] - closeArr[i-1] || highArr[i]-lowArr[i])\n    );\n  }), period);\n\n  const basicUpper = highArr.map((h, i) => ((h + lowArr[i]) / 2) + mult * (atrArr[i] || 0));\n  const basicLower = lowArr.map((l, i) => ((highArr[i] + l) / 2) - mult * (atrArr[i] || 0));\n  const supertrendArr = Array(closeArr.length).fill(null);\n  let prevSuper = null;\n\n  for (let i = 0; i < closeArr.length; i++) {\n    if (i === 0) {\n      supertrendArr[i] = basicUpper[i];\n      prevSuper = basicUpper[i];\n      continue;\n    }\n    let currSuper;\n    if (closeArr[i - 1] <= prevSuper) currSuper = Math.min(basicUpper[i], prevSuper);\n    else currSuper = basicUpper[i];\n    if (closeArr[i] > currSuper) prevSuper = basicLower[i];\n    else prevSuper = currSuper;\n    supertrendArr[i] = prevSuper;\n  }\n  // Dirección: alcista (1) si el cierre está por arriba, bajista (-1) si abajo.\n  const trendArr = closeArr.map((c, i) => (c > supertrendArr[i] ? 1 : -1));\n  return { supertrendArr, trendArr };\n}\n\n// ------- Calcula los indicadores, en arrays -------\n\nconst ema9Array   = calcEMA(closeArray, 9);\nconst ema21Array  = calcEMA(closeArray, 21);\nconst ema50Array  = calcEMA(closeArray, 50);\nconst ema200Array = calcEMA(closeArray, 200);\nconst rsi14Array  = calcRSIWilder(closeArray, 14);\n\nconst {mid: bbMidArray, upper: bbUpArray, lower: bbDnArray, volAvg: volAvg20Array, atr: atr14Array} = \n  calcBBVolATR(closeArray, highArray, lowArray, volumeArray, 20, 2);\n\nconst macdObj = calcMACD(closeArray);\nconst adxResult = calcADX(highArray, lowArray, closeArray, 14);\nconst supertrendObj = calcSupertrend(highArray, lowArray, closeArray, 10, 3);\n\n// --------- CONSTRUYE EL ARRAY FINAL ---------\nconst result = items.map((item, idx) => ({\n  time:   item.json.time,\n  open:   item.json.open,\n  high:   item.json.high,\n  low:    item.json.low,\n  close:  item.json.close,\n  volume: item.json.volume,\n\n  ema9:   ema9Array[idx],\n  ema21:  ema21Array[idx],\n  ema50:  ema50Array[idx],\n  ema200: ema200Array[idx],\n  rsi14:  rsi14Array[idx],\n\n  bb_mid: bbMidArray[idx],\n  bb_up:  bbUpArray[idx],\n  bb_dn:  bbDnArray[idx],\n  vol_avg20: volAvg20Array[idx],\n  atr14:  atr14Array[idx],\n\n  macd:   macdObj.macd[idx],\n  macd_signal: macdObj.signal[idx],\n  macd_hist: macdObj.hist[idx],\n\n  adx14:  adxResult.adx[idx],\n  di_plus: adxResult.plusDI[idx],\n  di_minus: adxResult.minusDI[idx],\n\n  supertrend: supertrendObj.supertrendArr[idx],\n  supertrend_dir: supertrendObj.trendArr[idx]\n}));\n\n// --- DEVUELVE UN ITEM POR VELA (uno por uno para que n8n no arroje error) ---\nreturn [\n  {\n    json: {\n      array: items.map(item => item.json)\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        -40
+      ],
+      "id": "e84e0a7f-7cbe-4f0e-af1f-4efeea29e3ee",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "url": "https://api.binance.com/api/v3/klines",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "BTCUSDC"
+            },
+            {
+              "name": "interval",
+              "value": "1m"
+            },
+            {
+              "name": "limit",
+              "value": "1000"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        280,
+        -40
+      ],
+      "id": "89737c29-b44e-412b-9c50-71c8fa2a2de7",
+      "name": "GET OHLC1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        20,
+        -40
+      ],
+      "id": "7a302f69-f3e0-475b-aef6-3dee0b78d759",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "/data/btcusdt_ohlcv.json",
+        "dataPropertyName": "",
+        "options": {
+          "append": false
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        900,
+        -240
+      ],
+      "id": "32334db7-b7f6-450c-b029-2eedfac3dd06",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1140,
+        -240
+      ],
+      "id": "58236af4-5d55-43d6-84d5-e4f3e798e281",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {},\n    binary: {\n      data: {\n        data: Buffer.from(JSON.stringify($json.array)).toString('base64'),\n        mimeType: 'application/json',\n        fileName: 'btcusdt_ohlcv.json',\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        -40
+      ],
+      "id": "fe2cefee-9183-4c9d-b6ae-392abe13ff5b",
+      "name": "Code"
+    }
+  ],
+  "connections": {
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET OHLC1": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "GET OHLC1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "pinData": {},
+  "triggerCount": 1,
+  "meta": null
+}

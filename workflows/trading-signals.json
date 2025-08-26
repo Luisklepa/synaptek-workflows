@@ -1,0 +1,440 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://api.binance.com/api/v3/klines",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "BTCUSDC"
+            },
+            {
+              "name": "interval",
+              "value": "15m"
+            },
+            {
+              "name": "limit",
+              "value": "200"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        -240
+      ],
+      "id": "8a04f549-f94a-42fe-b598-9bea78949858",
+      "name": "GET OHLC"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */15 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -300,
+        -240
+      ],
+      "id": "1f504a39-8b10-4705-a313-d06c03132f80",
+      "name": "15 MIN"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        840,
+        -380
+      ],
+      "id": "68a86b21-d1fe-45b4-bec3-1c7648415507",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "UJU8mlH2v4PwwngG",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{\"alert-\"+$nowEpoch}}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        960,
+        -380
+      ],
+      "id": "10614fcf-9666-4303-97c6-d2158986f0be",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "717850468068138",
+        "recipientPhoneNumber": "51936877841",
+        "textBody": "={{ $json['SEÑAL'] }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        580,
+        -240
+      ],
+      "id": "f1c7370b-5358-4012-acd4-d97ad285773a",
+      "name": "WhatsApp Business Cloud1",
+      "webhookId": "b1379498-44a4-43a4-84ab-fbc61a24b065",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Ss5DHHM3UFXRLLHi",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE",
+          "mode": "list",
+          "cachedResultName": "LOG",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1046056566,
+          "mode": "list",
+          "cachedResultName": "Hoja 2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE/edit#gid=1046056566"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "SEÑAL": "={{ $json.signal_text }}",
+            "FECHA": "={{ $json.time }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "SEÑAL",
+              "displayName": "SEÑAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "FECHA",
+              "displayName": "FECHA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        360,
+        -240
+      ],
+      "id": "3cb75800-9350-41e4-a79c-e2fddc084238",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BQmZ5qXps8Q00aaK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Si vienen tus datos crudos con claves numéricas, los convertimos a OHLCV estándar:\nif (items[0]?.json?.['0']) {\n  items = items.map(item => {\n    const k = item.json;\n    return {\n      json: {\n        time:   new Date(Number(k['0'])).toISOString(),\n        open:   parseFloat(k['1']),\n        high:   parseFloat(k['2']),\n        low:    parseFloat(k['3']),\n        close:  parseFloat(k['4']),\n        volume: parseFloat(k['5']),\n      }\n    }\n  });\n}\n\n// 2. Crea arrays de cada variable OHLCV:\nconst closeArray  = items.map(i => i.json.close);\nconst highArray   = items.map(i => i.json.high);\nconst lowArray    = items.map(i => i.json.low);\nconst openArray   = items.map(i => i.json.open);\nconst volumeArray = items.map(i => i.json.volume);\n\n// ----- INDICADORES -----\n\nfunction calcEMA(valuesArray, period) {\n  const multiplier = 2 / (period + 1);\n  const result = Array(valuesArray.length).fill(undefined);\n  const sma = valuesArray.slice(0, period).reduce((a,b) => a+b, 0) / period;\n  result[period - 1] = sma;\n  for (let j = period; j < valuesArray.length; j++) {\n    result[j] = (valuesArray[j] - result[j-1]) * multiplier + result[j-1];\n  }\n  return result;\n}\n\nfunction calcRSIWilder(valuesArray, period) {\n  const result = Array(valuesArray.length).fill(undefined);\n  let gains = 0, losses = 0;\n  for (let k = 1; k <= period; k++) {\n    const diff = valuesArray[k] - valuesArray[k-1];\n    if (diff > 0) gains += diff; else losses -= diff;\n  }\n  let avgGain = gains / period, avgLoss = losses / period;\n  for (let m = period + 1; m < valuesArray.length; m++) {\n    const d = valuesArray[m] - valuesArray[m-1];\n    avgGain = ((avgGain * (period - 1)) + Math.max(d,0)) / period;\n    avgLoss = ((avgLoss * (period - 1)) + Math.max(-d,0)) / period;\n    const rs = avgLoss === 0 ? 0 : avgGain / avgLoss;\n    result[m] = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));\n  }\n  return result;\n}\n\nfunction calcBBVolATR(closeArr, highArr, lowArr, volArr, period, multBB) {\n  const bbMidArr = Array(closeArr.length).fill(undefined);\n  const bbUpperArr = Array(closeArr.length).fill(undefined);\n  const bbLowerArr = Array(closeArr.length).fill(undefined);\n  const volAvgArr = Array(closeArr.length).fill(undefined);\n  const atrArr = Array(closeArr.length).fill(undefined);\n\n  let sumClose = 0, sumCloseSq = 0, sumVol = 0, prevClose = closeArr[0], sumATR = 0;\n  for(let n=0;n<closeArr.length;n++) {\n    sumClose += closeArr[n];\n    sumCloseSq += closeArr[n]*closeArr[n];\n    sumVol += volArr[n];\n    const trueRange = Math.max(\n      highArr[n]-lowArr[n],\n      Math.abs(highArr[n]-prevClose),\n      Math.abs(lowArr[n]-prevClose)\n    );\n    if (n === 0) sumATR = trueRange;\n    else sumATR += trueRange;\n\n    if (n >= period) {\n      sumClose -= closeArr[n-period];\n      sumCloseSq -= closeArr[n-period]*closeArr[n-period];\n      sumVol -= volArr[n-period];\n      sumATR -= Math.max(\n        highArr[n-period]-lowArr[n-period],\n        Math.abs(highArr[n-period]-(n-period-1>=0?closeArr[n-period-1]:prevClose)),\n        Math.abs(lowArr[n-period]-(n-period-1>=0?closeArr[n-period-1]:prevClose))\n      );\n    }\n    if (n >= period-1) {\n      const mean = sumClose/period;\n      const stdev = Math.sqrt(sumCloseSq/period-mean*mean);\n      bbMidArr[n] = mean;\n      bbUpperArr[n] = mean+multBB*stdev;\n      bbLowerArr[n] = mean-multBB*stdev;\n      volAvgArr[n] = sumVol/period;\n      atrArr[n] = sumATR/period;\n    }\n    prevClose = closeArr[n];\n  }\n  return {\n    mid: bbMidArr,\n    upper: bbUpperArr,\n    lower: bbLowerArr,\n    volAvg: volAvgArr,\n    atr: atrArr\n  };\n}\n\nfunction calcMACD(valuesArr, fast = 12, slow = 26, signal = 9) {\n  const emaFastArr = calcEMA(valuesArr, fast);\n  const emaSlowArr = calcEMA(valuesArr, slow);\n  const macdArr    = valuesArr.map((_, i) => (\n    emaFastArr[i] !== undefined && emaSlowArr[i] !== undefined\n      ? emaFastArr[i] - emaSlowArr[i]\n      : undefined\n  ));\n  const signalArr = calcEMA(macdArr.map(v=>v===undefined?0:v), signal);\n  const histArr = macdArr.map((v,i)=>(\n    v !== undefined && signalArr[i] !== undefined\n      ? v - signalArr[i]\n      : undefined\n  ));\n  return { macd: macdArr, signal: signalArr, hist: histArr };\n}\n\nfunction calcADX(highArr, lowArr, closeArr, period=14) {\n  const len = highArr.length;\n  const dxArr = Array(len).fill(undefined),\n        adxArr = Array(len).fill(undefined),\n        plusDIarr = Array(len).fill(undefined),\n        minusDIarr = Array(len).fill(undefined);\n\n  let trList = [], pdmList = [], ndmList = [];\n  for(let i=1;i<len;i++) {\n    const tr = Math.max(\n      highArr[i] - lowArr[i],\n      Math.abs(highArr[i] - closeArr[i-1]),\n      Math.abs(lowArr[i] - closeArr[i-1])\n    );\n    trList.push(tr);\n    const pdm = (highArr[i]-highArr[i-1]) > (lowArr[i-1]-lowArr[i]) && (highArr[i]-highArr[i-1])>0 ? highArr[i]-highArr[i-1]:0;\n    const ndm = (lowArr[i-1]-lowArr[i]) > (highArr[i]-highArr[i-1]) && (lowArr[i-1]-lowArr[i])>0 ? lowArr[i-1]-lowArr[i]:0;\n    pdmList.push(pdm); ndmList.push(ndm);\n  }\n  function smma(arr, period) {\n    let o = Array(arr.length).fill(undefined);\n    let sum = arr.slice(0, period).reduce((a,b)=>a+b, 0);\n    o[period-1] = sum/period;\n    for(let z=period;z<arr.length;z++)\n      o[z] = ((o[z-1]*(period-1))+arr[z])/period;\n    return o;\n  }\n  const atrArr = smma(trList, period);\n  const pdiArr = smma(pdmList, period).map((v,i)=>v!==undefined && atrArr[i]!==undefined?100*v/atrArr[i]:undefined);\n  const ndiArr = smma(ndmList, period).map((v,i)=>v!==undefined && atrArr[i]!==undefined?100*v/atrArr[i]:undefined);\n  for(let j=period-1;j<atrArr.length;j++) {\n    if (pdiArr[j]!==undefined && ndiArr[j]!==undefined) {\n      const sum = pdiArr[j]+ndiArr[j];\n      const dx = sum===0 ? 0 : 100*Math.abs(pdiArr[j]-ndiArr[j])/sum;\n      dxArr[j+1] = dx;\n      plusDIarr[j+1] = pdiArr[j];\n      minusDIarr[j+1] = ndiArr[j];\n    }\n  }\n  const adxSmoothed = smma(dxArr.map(x=>x===undefined?0:x),period);\n  for(let k=2*period-1;k<adxSmoothed.length;k++) {\n    adxArr[k+1] = adxSmoothed[k];\n  }\n  return { adx: adxArr, plusDI: plusDIarr, minusDI: minusDIarr };\n}\n\nfunction calcSupertrend(highArr, lowArr, closeArr, period=10, mult=3) {\n  const atrArr = calcEMA(highArr.map((_, i) => {\n    return Math.max(\n      highArr[i] - lowArr[i],\n      Math.abs(highArr[i] - closeArr[i-1] || highArr[i]-lowArr[i]),\n      Math.abs(lowArr[i] - closeArr[i-1] || highArr[i]-lowArr[i])\n    );\n  }), period);\n\n  const basicUpper = highArr.map((h, i) => ((h + lowArr[i]) / 2) + mult * (atrArr[i] || 0));\n  const basicLower = lowArr.map((l, i) => ((highArr[i] + l) / 2) - mult * (atrArr[i] || 0));\n  const supertrendArr = Array(closeArr.length).fill(null);\n  let prevSuper = null;\n\n  for (let i = 0; i < closeArr.length; i++) {\n    if (i === 0) {\n      supertrendArr[i] = basicUpper[i];\n      prevSuper = basicUpper[i];\n      continue;\n    }\n    let currSuper;\n    if (closeArr[i - 1] <= prevSuper) currSuper = Math.min(basicUpper[i], prevSuper);\n    else currSuper = basicUpper[i];\n    if (closeArr[i] > currSuper) prevSuper = basicLower[i];\n    else prevSuper = currSuper;\n    supertrendArr[i] = prevSuper;\n  }\n  // Dirección: alcista (1) si el cierre está por arriba, bajista (-1) si abajo.\n  const trendArr = closeArr.map((c, i) => (c > supertrendArr[i] ? 1 : -1));\n  return { supertrendArr, trendArr };\n}\n\n// --------------- Indicadores por array ---------------\nconst ema9Array   = calcEMA(closeArray, 9);\nconst ema21Array  = calcEMA(closeArray, 21);\nconst ema50Array  = calcEMA(closeArray, 50);\nconst ema200Array = calcEMA(closeArray, 200);\nconst rsi14Array  = calcRSIWilder(closeArray, 14);\n\nconst {mid: bbMidArray, upper: bbUpArray, lower: bbDnArray, volAvg: volAvg20Array, atr: atr14Array} = \n  calcBBVolATR(closeArray, highArray, lowArray, volumeArray, 20, 2);\n\nconst macdObj = calcMACD(closeArray);\nconst adxResult = calcADX(highArray, lowArray, closeArray, 14);\nconst supertrendObj = calcSupertrend(highArray, lowArray, closeArray, 10, 3);\n\nconst idxLast = closeArray.length - 1;\n\n// --------------- Última vela enriquecida -----------------\nconst dataLast = {\n  ...items[idxLast].json,\n  ema9:        Number(ema9Array[idxLast]?.toFixed(6)),\n  ema21:       Number(ema21Array[idxLast]?.toFixed(6)),\n  ema50:       Number(ema50Array[idxLast]?.toFixed(6)),\n  ema200:      Number(ema200Array[idxLast]?.toFixed(6)),\n  rsi14:       Number(rsi14Array[idxLast]?.toFixed(4)),\n  bb_mid:      Number(bbMidArray[idxLast]?.toFixed(2)),\n  bb_up:       Number(bbUpArray[idxLast]?.toFixed(2)),\n  bb_dn:       Number(bbDnArray[idxLast]?.toFixed(2)),\n  vol_avg20:   Number(volAvg20Array[idxLast]?.toFixed(4)),\n  atr14:       Number(atr14Array[idxLast]?.toFixed(4)),\n  macd:        Number(macdObj.macd[idxLast]?.toFixed(6)),\n  macd_signal: Number(macdObj.signal[idxLast]?.toFixed(6)),\n  macd_hist:   Number(macdObj.hist[idxLast]?.toFixed(6)),\n  adx14:       Number(adxResult.adx[idxLast]?.toFixed(4)),\n  di_plus:     Number(adxResult.plusDI[idxLast]?.toFixed(4)),\n  di_minus:    Number(adxResult.minusDI[idxLast]?.toFixed(4)),\n  supertrend:  Number(supertrendObj.supertrendArr[idxLast]?.toFixed(2)),\n  supertrend_dir: supertrendObj.trendArr[idxLast], // 1=alcista, -1=bajista\n};\n\n// ---------- Sistema de señales con variables claramente diferenciadas ----------\nfunction percentDiff(a, b) {\n  return Math.abs((a - b) / ((a + b) / 2)) * 100;\n}\n\nconst closeLast  = Number(dataLast.close);\nconst ema9Last   = Number(dataLast.ema9);\nconst ema21Last  = Number(dataLast.ema21);\nconst ema50Last  = Number(dataLast.ema50);\nconst ema200Last = Number(dataLast.ema200);\nconst rsi14Last  = Number(dataLast.rsi14);\nconst bbMidLast  = Number(dataLast.bb_mid);\nconst macdLast   = Number(dataLast.macd);\nconst macdSignalLast = Number(dataLast.macd_signal);\nconst macdHistLast   = Number(dataLast.macd_hist);\nconst supertrendDirLast = Number(dataLast.supertrend_dir);\nconst diPlusLast  = Number(dataLast.di_plus);\nconst diMinusLast = Number(dataLast.di_minus);\nconst adx14Last   = Number(dataLast.adx14);\nconst volumeLast  = Number(dataLast.volume);\nconst volAvg20Last= Number(dataLast.vol_avg20);\nconst atr14Last   = Number(dataLast.atr14);\nconst openLast    = Number(dataLast.open);\nconst highLast    = Number(dataLast.high);\nconst lowLast     = Number(dataLast.low);\n\nconst totalRangeLast = Math.abs(highLast-lowLast);\nconst candleBodyLast = Math.abs(closeLast - openLast);\nconst upperWickLast = highLast - Math.max(closeLast, openLast);\nconst lowerWickLast = Math.min(closeLast, openLast) - lowLast;\n\nconst critVolume = volumeLast >= 0.8 * volAvg20Last;\nconst critATR = atr14Last >= 0.67 * (atr14Last); // Puedes cambiar el denominador si tienes un ATR promedio real\n\n// ---- Señal ----\n\nlet signalOut = \"\";\nlet explanationOut = \"\";\nlet ratioOut = \"\";\nlet pricesOut = \"\";\nlet trendOut = \"\";\nlet entryTypeOut = \"\";\nlet signalTextOut = \"\";\n\n// --- Señal de tendencia LONG ---\nconst emasLongCond = (closeLast > ema9Last && closeLast > ema21Last && closeLast > ema50Last);\nconst ema200LongCond = (closeLast >= ema200Last || \n  (ema50Last < ema200Last && percentDiff(ema50Last, ema200Last) < 0.5 && ema9Last>ema21Last && ema21Last>ema50Last)\n);\nconst longSignal = (\n  emasLongCond &&\n  ema200LongCond &&\n  ((ema50Last >= ema200Last) ? true : percentDiff(ema50Last, ema200Last) < 0.5) &&\n  (rsi14Last > 60 || (rsi14Last >= 58 && macdLast > macdSignalLast && macdHistLast > 0)) &&\n  closeLast > bbMidLast &&\n  macdLast > macdSignalLast && macdHistLast > 0 &&\n  (supertrendDirLast === 1 || supertrendDirLast === null) &&\n  diPlusLast > diMinusLast && adx14Last >= 19 &&\n  critVolume && critATR\n);\n\n// --- Señal de tendencia SHORT ---\nconst emasShortCond = (closeLast < ema9Last && closeLast < ema21Last && closeLast < ema50Last);\nconst ema200ShortCond = (closeLast <= ema200Last || \n  (ema50Last > ema200Last && percentDiff(ema50Last, ema200Last) < 0.5 && ema9Last<ema21Last && ema21Last<ema50Last)\n);\nconst shortSignal = (\n  emasShortCond &&\n  ema200ShortCond &&\n  ((ema50Last <= ema200Last) ? true : percentDiff(ema50Last, ema200Last) < 0.5) &&\n  (rsi14Last < 40 || (rsi14Last <= 42 && macdLast < macdSignalLast && macdHistLast < 0)) &&\n  closeLast < bbMidLast &&\n  macdLast < macdSignalLast && macdHistLast < 0 &&\n  (supertrendDirLast === -1 || supertrendDirLast === null) &&\n  diMinusLast > diPlusLast && adx14Last >= 19 &&\n  critVolume && critATR\n);\n\n// ---- FILTROS NO TRADE ----\nlet reasonNoTrade = \"\";\nif (\n     (rsi14Last>42 && rsi14Last<58)\n  || (volumeLast < 0.8*volAvg20Last)\n  || adx14Last<19\n  || ((candleBodyLast < 0.4*totalRangeLast) && (upperWickLast+lowerWickLast > 1.5*atr14Last))\n  || (atr14Last > 2*atr14Last)\n  || isNaN(closeLast)||isNaN(ema9Last)||isNaN(ema21Last)||isNaN(ema50Last)||isNaN(ema200Last)||\n     isNaN(rsi14Last)||isNaN(bbMidLast)||isNaN(macdLast)||isNaN(macdSignalLast)||isNaN(macdHistLast)||\n     isNaN(diPlusLast)||isNaN(diMinusLast)||isNaN(adx14Last)||isNaN(volumeLast)||isNaN(volAvg20Last)||isNaN(atr14Last)\n) {\n  reasonNoTrade = \"Filtro NO TRADE: Zona neutra RSI, volumen/ATR bajo o exceso, manipulación o falta datos.\";\n}\n\n// ---- SL-TP dinámico ----\nfunction calcSLTP(basePrice, atr, strength){\n  let stopLoss = Math.max(basePrice*0.005, 0.3*atr);\n  let multiplier = 1;\n  if(strength === \"fuerte\") multiplier = 2;\n  if(strength === \"extrema\") multiplier = 3;\n  let takeProfit = stopLoss * multiplier;\n  return {SL: +stopLoss.toFixed(2), TP: +(takeProfit+stopLoss).toFixed(2)};\n}\n\n// --- OUTPUT DE LA SEÑAL Y EL MENSAJE FINAL ---\nif(reasonNoTrade){\n  signalOut = \"NO TRADE\";\n  explanationOut = reasonNoTrade;\n  signalTextOut = `NO TRADE. ${explanationOut}`;\n}else if(longSignal){\n  signalOut = \"LONG\";\n  if(ema50Last > ema200Last) {trendOut = \"alcista\"; entryTypeOut = \"tendencia mayor confirmada\";}\n  else {trendOut = \"alcista\"; entryTypeOut = \"reversal anticipado\";}\n  let sltpVal = calcSLTP(closeLast, atr14Last, adx14Last>30?\"fuerte\":adx14Last>45?\"extrema\":\"normal\");\n  ratioOut = adx14Last>30?\"1:2\":\"1:1\";\n  explanationOut = `Cierre ${closeLast}>EMAs, RSI ${rsi14Last}, MACD/Hist ${macdLast}/${macdHistLast}, volumen ${volumeLast}. ADX ${adx14Last}.`;\n  pricesOut = `SL: ${(closeLast-sltpVal.SL).toFixed(2)}, TP: ${(closeLast+sltpVal.TP).toFixed(2)}`;\n  signalTextOut = `LONG. ${explanationOut} Ratio SL-TP sugerido ${ratioOut} (${pricesOut}). Tendencia ${trendOut}. Entrada por ${entryTypeOut}.`\n}else if(shortSignal){\n  signalOut = \"SHORT\";\n  if(ema50Last < ema200Last) {trendOut = \"bajista\"; entryTypeOut = \"tendencia mayor confirmada\";}\n  else {trendOut = \"bajista\"; entryTypeOut = \"reversal anticipado\";}\n  let sltpVal = calcSLTP(closeLast, atr14Last, adx14Last>30?\"fuerte\":adx14Last>45?\"extrema\":\"normal\");\n  ratioOut = adx14Last>30?\"1:2\":\"1:1\";\n  explanationOut = `Cierre ${closeLast}<EMAs, RSI ${rsi14Last}, MACD/Hist ${macdLast}/${macdHistLast}, volumen ${volumeLast}. ADX ${adx14Last}.`;\n  pricesOut = `SL: ${(closeLast+sltpVal.SL).toFixed(2)}, TP: ${(closeLast-sltpVal.TP).toFixed(2)}`;\n  signalTextOut = `SHORT. ${explanationOut} Ratio SL-TP sugerido ${ratioOut} (${pricesOut}). Tendencia ${trendOut}. Entrada por ${entryTypeOut}.`\n}else{\n  signalOut = \"NO TRADE\";\n  explanationOut = \"Condiciones no cumplen para LONG ni SHORT, posible zona neutra o conflicto de señales.\";\n  signalTextOut = `NO TRADE. ${explanationOut}`;\n}\n\n// ---------- OUTPUT FINAL -----------\nreturn [\n  {\n    json: {\n      ...dataLast,\n      signal: signalOut,\n      explanation: explanationOut,\n      sl_tp: ratioOut,\n      prices: pricesOut,\n      trend: trendOut,\n      entry_type: entryTypeOut,\n      signal_text: signalTextOut\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        140,
+        -240
+      ],
+      "id": "3557b0f3-e1a8-4a05-b662-ef933b00d217",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */15 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -300,
+        -600
+      ],
+      "id": "695a7af6-0100-40cf-9b88-c048cc6fb858",
+      "name": "15 MIN1"
+    },
+    {
+      "parameters": {
+        "url": "https://api.binance.com/api/v3/klines",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "BTCUSDC"
+            },
+            {
+              "name": "interval",
+              "value": "15m"
+            },
+            {
+              "name": "limit",
+              "value": "200"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -80,
+        -600
+      ],
+      "id": "18c84391-8c48-4a21-8c4f-9a29992ced75",
+      "name": "GET OHLC1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// devolvemos un array con un solo elemento: la última vela\nreturn [ items[ items.length - 1 ] ];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        580,
+        -600
+      ],
+      "id": "a4a5e90b-3713-425d-ba77-bab428938b63",
+      "name": "ULTIMA VELA"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n  \"time\": {{ $json.time }},\n  \"open\": {{ $json.open }},\n  \"high\": {{ $json.high }},\n  \"low\": {{ $json.low }},\n  \"close\": {{ $json.close }},\n  \"volume\": {{ $json.volume }},\n  \"ema9\": {{ $json.ema9 }},\n  \"ema21\": {{ $json.ema21 }},\n  \"ema50\": {{ $json.ema50 }},\n  \"ema200\": {{ $json.ema200 }},\n  \"rsi14\": {{ $json.rsi14 }},\n  \"bb_mid\": {{ $json.bb_mid }},\n  \"bb_up\": {{ $json.bb_up }},\n  \"bb_dn\": {{ $json.bb_dn }},\n  \"vol_avg20\": {{ $json.vol_avg20 }},\n  \"atr14\": {{ $json.atr14 }},\n  \"macd\": {{ $json.macd }},\n  \"macd_signal\": {{ $json.macd_signal }},\n  \"macd_hist\": {{ $json.macd_hist }},\n  \"adx14\": {{ $json.adx14 }},\n  \"di_plus\": {{ $json.di_plus }},\n  \"di_minus\": {{ $json.di_minus }},\n  \"supertrend\": {{ $json.supertrend }},\n  \"supertrend_dir\": {{ $json.supertrend_dir }},\n  \n}\n",
+        "options": {
+          "systemMessage": "=Eres un agente AI de trading. Recibes datos OHLC y técnicos de la última vela de BTCUSDC en temporalidad de 15 minutos.\n\nTu tarea es analizar el contexto y emitir una señal concisa: SOLO responde \"LONG\", \"SHORT\" o \"NO TRADE\" seguido de una breve explicación técnica (máximo dos frases y números: valores, ratios, medias, etc.), el ratio SL-TP ideal según el contexto y la volatilidad (ejemplo: 1:1, 1:2, 1:3, etc., seguido de los precios), y si es tendencia bajista o alcista y por qué. Indica también si la entrada es por \"reversal anticipado/momentum temprano\" o \"tendencia mayor confirmada\".\n\nReglas para decidir (ajustadas y mejoradas):\n\nSEÑAL LONG:\n\nCierre (\"close\") mayor que EMA9, EMA21 y EMA50.\nCierre por encima o tocando la EMA200, aunque EMA50 no haya cruzado todavía la EMA200, si la diferencia entre EMA50 y EMA200 es menor al 0.5% y las EMAs cortas están claramente apiladas arriba, y el resto de condiciones es alcista.\nSi EMA50 > EMA200, tendencia mayor confirmada.\nSi todavía EMA50 < EMA200 pero está muy cerca, considerar como \"reversal anticipado\".\nRSI14 > 60. También permitido si RSI está entre 58–60 si todos los otros indicadores son inequívocamente alcistas.\nCierre mayor que bb_mid (media Bollinger).\nMACD > macd_signal y histograma MACD positivo.\nsupertrend_dir = 1 si existe el dato, pero si no y el resto es claro, no es obligatoria.\ndi_plus > di_minus y adx14 > 20 (o entre 19–20 si el resto es muy claro).\nVolumen es MAYOR O IGUAL al 80% de vol_avg20 y en aumento respecto a las 2 velas previas.\natr14 mayor al 67% del ATR máximo reciente (si tienes ese dato).\nSEÑAL SHORT:\n\nCierre menor que EMA9, EMA21 y EMA50.\nCierre por debajo o tocando la EMA200, aunque EMA50 no haya cruzado, si la diferencia es menor al 0.5% y las EMAs cortas están apiladas a la baja y el resto acompaña.\nSi EMA50 < EMA200, tendencia mayor confirmada.\nSi EMA50 está muy cerca de EMA200, considerar como \"reversal anticipado\".\nRSI14 < 40, o hasta 42 si todos los otros indicadores son claramente bajistas.\nCierre menor que bb_mid.\nMACD < macd_signal y histograma negativo.\nsupertrend_dir = -1 si existe el dato, pero si no y el resto es muy claro, no es obligatoria.\ndi_minus > di_plus y adx14 > 20 (o entre 19–20 si el resto acompaña).\nVolumen MAYOR O IGUAL al 80% vol_avg20 y creciendo respecto a las dos previas.\natr14 mayor al 67% del ATR máximo reciente (si tienes ese dato).\nNO TRADE (y filtros avanzados):\n\nSi NO se cumplen TODAS las condiciones anteriores para LONG ni todas para SHORT, responde \"NO TRADE\".\nTambién responde \"NO TRADE\" si:\nRSI14 entre 42–58 (salvo momentum fortísimo en el resto).\nVolumen menor al 80% del promedio reciente y NO crece contra las últimas 2 velas.\nSeñales contradictorias.\nadx14 < 19 y sin momentum claro.\nATR14 es bajo.\nFalta algún dato vital (menciónalo explícitamente).\nDivergencia clara entre el precio y RSI/MACD en la última vela (por ejemplo, precio hace nuevo mínimo/máximo pero RSI o MACD no lo confirma), prioriza NO TRADE.\nSi la última vela tiene cuerpo menor al 40% del rango total y mechas que suman 1.5x o más el ATR14, responde NO TRADE: posible manipulación/lateralidad.\nSi ATR14 > 2x el ATR20 promedio más reciente, responde NO TRADE por volatilidad anómala.\nSi el volumen ha caído secuencialmente en las últimas 3 velas y está <70% de vol_avg20 en todas, responde NO TRADE.\nSi la misma señal (“LONG” o “SHORT”) fue emitida en 3 de las últimas 4 velas y el cierre actual no hace nuevo máximo/mínimo, responde NO TRADE.\nSi hay un gap (close-open) mayor al 1% del precio de cierre anterior, responde NO TRADE salvo que todos los otros criterios estén alineados.\nSIEMPRE prioriza manejo del riesgo y evita señales inestables salvo excepciones anteriores.\nSL-TP (Stop-Loss / Take-Profit):\nSugiere ratio SL-TP recomendado basándote en la volatilidad (ATR14) y fuerza de señal.\n\nRatio conservador (1:1, 1:1.5) si volatilidad es baja o señal débil; más amplio (1:2, 1:3 o superior) si volatilidad y momentum son evidentes.\nSL nunca debe ser inferior al 0.5% del precio de entrada o al 30% del ATR14, el que sea mayor.\nFormato de la respuesta:\nSolo responde así:\n\nLONG. Explicación técnica con números. Ratio SL-TP sugerido X:Y (precios). Explica si es “reversal anticipado” o “tendencia mayor confirmada”.\nSHORT. Explicación técnica con números. Ratio SL-TP sugerido X:Y (precios). Explica si es “reversal anticipado” o “tendencia mayor confirmada”.\nNO TRADE. Explicación técnica. No escribas más de dos frases de explicación técnica. Si falta algún dato vital, responde \"NO TRADE\" y menciónalo. Solo responde la señal SI ES DIFERENTE a la señal anterior recibida (“prev_signal”). Si es igual, responde vacío (\"\").\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -600
+      ],
+      "id": "fb0cc637-5af2-47cf-8a23-86bfdc201cef",
+      "name": "Agente Interpretador de Senales"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Extraemos arrays de precio y volumen\nconst closes  = items.map(i => i.json.close);\nconst highs   = items.map(i => i.json.high);\nconst lows    = items.map(i => i.json.low);\nconst volumes = items.map(i => i.json.volume);\n\n// 2) EMAs general\nfunction ema(values, period) {\n  const k = 2 / (period + 1);\n  const out = Array(values.length).fill(undefined);\n  const sma = values.slice(0, period).reduce((a, b) => a + b, 0) / period;\n  out[period - 1] = sma;\n  for (let i = period; i < values.length; i++) {\n    out[i] = (values[i] - out[i - 1]) * k + out[i - 1];\n  }\n  return out;\n}\n\n// 3) RSI Wilder\nfunction rsi(values, period) {\n  const out = Array(values.length).fill(undefined);\n  let gains = 0, losses = 0;\n  for (let i = 1; i <= period; i++) {\n    const d = values[i] - values[i - 1];\n    if (d > 0) gains += d; else losses -= d;\n  }\n  let avgG = gains / period, avgL = losses / period;\n  for (let i = period + 1; i < values.length; i++) {\n    const d = values[i] - values[i - 1];\n    avgG = ((avgG * (period - 1)) + Math.max(d, 0)) / period;\n    avgL = ((avgL * (period - 1)) + Math.max(-d, 0)) / period;\n    const rs = avgG / avgL;\n    out[i] = 100 - (100 / (1 + rs));\n  }\n  return out;\n}\n\n// 4) Bollinger, VolAvg, ATR\nfunction rollingStats(values, period, multBB) {\n  const mb = Array(values.length).fill(undefined);\n  const ub = Array(values.length).fill(undefined);\n  const lb = Array(values.length).fill(undefined);\n  const volAvg = Array(values.length).fill(undefined);\n  const atr = Array(values.length).fill(undefined);\n\n  let sum = 0, sumSq = 0, volSum = 0;\n  let prevClose = values[0], atrSum = 0;\n\n  for (let i = 0; i < values.length; i++) {\n    sum += values[i];\n    sumSq += values[i] * values[i];\n    volSum += volumes[i];\n\n    // ATR true range\n    const tr = Math.max(\n      highs[i] - lows[i],\n      Math.abs(highs[i] - prevClose),\n      Math.abs(lows[i] - prevClose)\n    );\n    if (i === 0) atrSum = tr;\n    else atrSum += tr;\n\n    if (i >= period) {\n      sum -= values[i - period];\n      sumSq -= values[i - period] * values[i - period];\n      volSum -= volumes[i - period];\n      atrSum -= Math.max(\n        highs[i - period] - lows[i - period],\n        Math.abs(highs[i - period] - (i - period - 1 >= 0 ? closes[i - period - 1] : prevClose)),\n        Math.abs(lows[i - period] - (i - period - 1 >= 0 ? closes[i - period - 1] : prevClose))\n      );\n    }\n\n    if (i >= period - 1) {\n      const mean = sum / period;\n      const varp = (sumSq / period) - (mean * mean);\n      const sd = Math.sqrt(varp);\n      mb[i] = mean; ub[i] = mean + multBB * sd; lb[i] = mean - multBB * sd;\n      volAvg[i] = volSum / period;\n      atr[i] = atrSum / period;\n    }\n    prevClose = values[i];\n  }\n  return { mb, ub, lb, volAvg, atr };\n}\n\n// 5) MACD (12-26-9 por defecto)\nfunction macd(values, fast = 12, slow = 26, signal = 9) {\n  const emaFast = ema(values, fast);\n  const emaSlow = ema(values, slow);\n  const macdLine = values.map((_, i) =>\n    emaFast[i] !== undefined && emaSlow[i] !== undefined\n      ? emaFast[i] - emaSlow[i]\n      : undefined\n  );\n  const signalLine = ema(macdLine.map(v => v === undefined ? 0 : v), signal);\n  const hist = macdLine.map((v, i) =>\n    v !== undefined && signalLine[i] !== undefined\n      ? v - signalLine[i]\n      : undefined\n  );\n  return { macdLine, signalLine, hist };\n}\n\n// 6) ADX, DI+, DI- (14 por defecto)\nfunction adx(highs, lows, closes, period = 14) {\n  const len = highs.length;\n  const dxArr = Array(len).fill(undefined);\n  const adxArr = Array(len).fill(undefined);\n  const plusDI = Array(len).fill(undefined);\n  const minusDI = Array(len).fill(undefined);\n\n  let trArr = [], pdmArr = [], ndmArr = [];\n\n  for (let i = 1; i < len; i++) {\n    const tr = Math.max(\n      highs[i] - lows[i],\n      Math.abs(highs[i] - closes[i - 1]),\n      Math.abs(lows[i] - closes[i - 1])\n    );\n    trArr.push(tr);\n\n    const pdm = highs[i] - highs[i - 1] > lows[i - 1] - lows[i] && (highs[i] - highs[i - 1]) > 0\n      ? highs[i] - highs[i - 1] : 0;\n    const ndm = lows[i - 1] - lows[i] > highs[i] - highs[i - 1] && (lows[i - 1] - lows[i]) > 0\n      ? lows[i - 1] - lows[i] : 0;\n    pdmArr.push(pdm);\n    ndmArr.push(ndm);\n  }\n\n  function smma(arr, period) {\n    let out = Array(arr.length).fill(undefined);\n    let sum = arr.slice(0, period).reduce((a, b) => a + b, 0);\n    out[period - 1] = sum / period;\n    for (let i = period; i < arr.length; i++) {\n      out[i] = ((out[i - 1] * (period - 1)) + arr[i]) / period;\n    }\n    return out;\n  }\n\n  const atr = smma(trArr, period);\n  const pdi = smma(pdmArr, period).map((v, i) => v !== undefined && atr[i] !== undefined ? 100 * v / atr[i] : undefined);\n  const ndi = smma(ndmArr, period).map((v, i) => v !== undefined && atr[i] !== undefined ? 100 * v / atr[i] : undefined);\n\n  for (let i = period - 1; i < atr.length; i++) {\n    if (pdi[i] !== undefined && ndi[i] !== undefined) {\n      const sum = pdi[i] + ndi[i];\n      const dx = sum === 0 ? 0 : 100 * Math.abs(pdi[i] - ndi[i]) / sum;\n      dxArr[i + 1] = dx;\n      plusDI[i + 1] = pdi[i];\n      minusDI[i + 1] = ndi[i];\n    }\n  }\n  // ADX: smoothed average of DX\n  const adxVals = smma(dxArr.map(x => x === undefined ? 0 : x), period);\n  for (let i = 2 * period - 1; i < adxVals.length; i++) {\n    adxArr[i + 1] = adxVals[i];\n  }\n\n  return { adxArr, plusDI, minusDI };\n}\n\n// 7) SuperTrend (período 10, multiplicador 3 por defecto)\nfunction supertrend(highs, lows, closes, period = 10, mult = 3) {\n  const atr = ema(highs.map((_, i) => {\n    return Math.max(\n      highs[i] - lows[i],\n      Math.abs(highs[i] - closes[i - 1] || highs[i] - lows[i]),\n      Math.abs(lows[i] - closes[i - 1] || highs[i] - lows[i])\n    );\n  }), period);\n\n  const basicUpper = highs.map((h, i) => ((h + lows[i]) / 2) + mult * (atr[i] || 0));\n  const basicLower = lows.map((l, i) => ((highs[i] + l) / 2) - mult * (atr[i] || 0));\n  const superTrend = Array(closes.length).fill(null);\n\n  let prevSuper = null, prevDir = null;\n\n  for (let i = 0; i < closes.length; i++) {\n    if (i === 0) {\n      superTrend[i] = basicUpper[i];\n      prevSuper = basicUpper[i];\n      prevDir = -1;\n      continue;\n    }\n    let currSuper;\n    if (closes[i - 1] <= prevSuper) {\n      currSuper = Math.min(basicUpper[i], prevSuper);\n    } else {\n      currSuper = basicUpper[i];\n    }\n    if (closes[i] > currSuper) {\n      prevDir = 1;\n      prevSuper = basicLower[i];\n    } else {\n      prevDir = -1;\n      prevSuper = currSuper;\n    }\n    superTrend[i] = prevSuper;\n  }\n  // Señal: 1 = tendencia alcista, -1 = bajista\n  const trendDir = closes.map((close, i) => (close > superTrend[i] ? 1 : -1));\n  return { superTrend, trendDir };\n}\n\n// --------- CÁLCULO DE INDICADORES ---------\nconst ema9   = ema(closes, 9);\nconst ema21  = ema(closes, 21);\nconst ema50  = ema(closes, 50);\nconst ema200 = ema(closes, 200);\nconst rsi14  = rsi(closes, 14);\n\nconst { mb: bb_mid, ub: bb_up, lb: bb_dn, volAvg: vol_avg20, atr: atr14 } =\n  rollingStats(closes, 20, 2);\n\nconst macdObj = macd(closes);\nconst { adxArr, plusDI, minusDI } = adx(highs, lows, closes, 14);\nconst superTrendObj = supertrend(highs, lows, closes, 10, 3);\n\n// --------- RESULTADO: ENRIQUECEMOS ITEMS ---------\nreturn items.map((it, i) => ({\n  json: {\n    ...it.json,\n    ema9:        Number(ema9[i]?.toFixed(6)),\n    ema21:       Number(ema21[i]?.toFixed(6)),\n    ema50:       Number(ema50[i]?.toFixed(6)),\n    ema200:      Number(ema200[i]?.toFixed(6)),\n    rsi14:       Number(rsi14[i]?.toFixed(4)),\n    bb_mid:      Number(bb_mid[i]?.toFixed(2)),\n    bb_up:       Number(bb_up[i]?.toFixed(2)),\n    bb_dn:       Number(bb_dn[i]?.toFixed(2)),\n    vol_avg20:   Number(vol_avg20[i]?.toFixed(4)),\n    atr14:       Number(atr14[i]?.toFixed(4)),\n    macd:        Number(macdObj.macdLine[i]?.toFixed(6)),\n    macd_signal: Number(macdObj.signalLine[i]?.toFixed(6)),\n    macd_hist:   Number(macdObj.hist[i]?.toFixed(6)),\n    adx14:       Number(adxArr[i]?.toFixed(4)),\n    di_plus:     Number(plusDI[i]?.toFixed(4)),\n    di_minus:    Number(minusDI[i]?.toFixed(4)),\n    supertrend:  Number(superTrendObj.superTrend[i]?.toFixed(2)),\n    supertrend_dir: superTrendObj.trendDir[i], // 1=alcista, -1=bajista\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        -600
+      ],
+      "id": "912e7da0-8259-4ff9-b413-5a5cd1288898",
+      "name": "GENERAR INDICADORES"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Recorremos todos los items:\n//    cada item.json es un objeto con claves '0','1',…'5'\nreturn items.map(item => {\n  // extraemos el objeto c\n  const c = item.json;\n\n  // c['0'] es el timestamp, c['1']..c['5'] son strings de precio/volumen\n  return {\n    json: {\n      time:   new Date( Number(c['0']) ).toISOString(), // convertimos a número\n      open:   parseFloat( c['1'] ),\n      high:   parseFloat( c['2'] ),\n      low:    parseFloat( c['3'] ),\n      close:  parseFloat( c['4'] ),\n      volume: parseFloat( c['5'] ),\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        140,
+        -600
+      ],
+      "id": "526cf9da-06b9-409e-980e-e037267b5e49",
+      "name": "MAPEAR VELAS"
+    }
+  ],
+  "connections": {
+    "GET OHLC": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15 MIN": {
+      "main": [
+        [
+          {
+            "node": "GET OHLC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Interpretador de Senales",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente Interpretador de Senales",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Business Cloud1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "15 MIN1": {
+      "main": [
+        [
+          {
+            "node": "GET OHLC1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET OHLC1": {
+      "main": [
+        [
+          {
+            "node": "MAPEAR VELAS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ULTIMA VELA": {
+      "main": [
+        [
+          {
+            "node": "Agente Interpretador de Senales",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GENERAR INDICADORES": {
+      "main": [
+        [
+          {
+            "node": "ULTIMA VELA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MAPEAR VELAS": {
+      "main": [
+        [
+          {
+            "node": "GENERAR INDICADORES",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {
+    "node:15 MIN": {
+      "recurrenceRules": []
+    }
+  },
+  "pinData": {},
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

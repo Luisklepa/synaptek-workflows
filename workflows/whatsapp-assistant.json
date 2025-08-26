@@ -1,0 +1,2195 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "maxTokens": 500
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1180,
+        -60
+      ],
+      "id": "afecd71a-df68-498d-90d0-3657f983401a",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "UJU8mlH2v4PwwngG",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+        "contextWindowLength": 200
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1320,
+        -60
+      ],
+      "id": "ecde12cb-210a-4c1f-896c-c31f97623c93",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1000,
+        -210
+      ],
+      "id": "3fb45538-11b9-4702-97da-bfd2356ca552",
+      "name": "WhatsApp Trigger",
+      "webhookId": "a5ad1765-c729-4462-9601-9260290d4cc7",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "JpEJ4IQZP0UDO7kv",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "831ba7e0-6965-4f62-ae03-3f074a373fa4",
+              "name": "userText",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        -260
+      ],
+      "id": "6e1b0935-8805-46a5-8b3b-e75d156c7709",
+      "name": "Text Only Prompt"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.messages[0].audio.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        -10,
+        -460
+      ],
+      "id": "0650fac5-2420-4af4-859e-a459a7a2a8ab",
+      "name": "Get Audio URL",
+      "webhookId": "22b6242f-515a-44d1-b9b9-2d7dc0490ae7",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Ss5DHHM3UFXRLLHi",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        -460
+      ],
+      "id": "eb6444af-d33b-476e-87cc-b61269026b25",
+      "name": "Download Audio",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "riCajvLYNE5cJXIp",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        540,
+        -460
+      ],
+      "id": "71c764f9-fd64-482a-b0ca-72d1a2d954a3",
+      "name": "Transcribir audio",
+      "credentials": {
+        "openAiApi": {
+          "id": "UJU8mlH2v4PwwngG",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8b6d0d36-f1e9-4cd5-a2a5-10e1e535cf2a",
+              "name": "transcript",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        -460
+      ],
+      "id": "842d6d4a-b4b2-48b0-95dd-1d1e8328496e",
+      "name": "Audio Prompt"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a0ac6698-c99c-4484-9e67-e0ba3bf2753a",
+              "leftValue": "={{ $('Flag').item.json.sendAudio }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2120,
+        -240
+      ],
+      "id": "e49ebd7c-8720-49ed-8617-186623a50688",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+        "textBody": "={{ $json.output || $json.image_description}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        2300,
+        -160
+      ],
+      "id": "ddd491bd-5561-4b64-bca1-5b41304c299e",
+      "name": "Respond with Text",
+      "webhookId": "c3cb1581-4f72-4077-b0c9-bdc20a313a78",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Ss5DHHM3UFXRLLHi",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "input": "={{ $json.output }}",
+        "voice": "echo",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2300,
+        -360
+      ],
+      "id": "541b9f9e-e44e-4cd5-aac4-6984d3a3e979",
+      "name": "Generate Audio",
+      "credentials": {
+        "openAiApi": {
+          "id": "UJU8mlH2v4PwwngG",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  if (item.binary) {\n    const binaryPropertyNames = Object.keys(item.binary);\n\n    for (const propName of binaryPropertyNames) {\n      \n      if (item.binary[propName].mimeType === 'audio/mp3') {\n        item.binary[propName].mimeType = 'audio/mpeg';\n      }\n    }\n  }\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2460,
+        -360
+      ],
+      "id": "9c267274-00ed-4076-aa96-af1ec1920db6",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "717850468068138",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+        "messageType": "audio",
+        "mediaPath": "useMedian8n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        2620,
+        -360
+      ],
+      "id": "288a40f9-f5d9-4643-9ab9-5618dac67898",
+      "name": "Respond with Audio",
+      "webhookId": "f3145c64-439e-4299-b99c-d1ec9e9e8f3c",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Ss5DHHM3UFXRLLHi",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $('WhatsApp Trigger').item.json.messages[0].image.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        -10,
+        -60
+      ],
+      "id": "e1972b8a-9da2-4d4d-94fd-c3816689975d",
+      "name": "Get Image URL",
+      "webhookId": "0d675998-d1f7-40c9-8c49-07abc92f900b",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Ss5DHHM3UFXRLLHi",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        -60
+      ],
+      "id": "6783144c-2f3e-4a62-bbeb-3e474a98ab1d",
+      "name": "Download Image",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "riCajvLYNE5cJXIp",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d5c7e97d-4777-42ee-a660-2593db4b6836",
+              "name": "image_description",
+              "value": "=# El usuario provee la siguiente imagen y texto.\n\n## Descripcion de Imagen:\n{{ $json.content }}\n\n## Mensaje del usuario:\n{{ $('WhatsApp Trigger').item.json.messages[0].image.caption || \"describe esta imagen.\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        760,
+        -60
+      ],
+      "id": "8fe42df5-a377-4cbf-95c3-1472486d480b",
+      "name": "Image add Text prompt"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst original = item.userText || item.transcript || $input.first().json.image_description || \"\";\n// RegEx que solo casca si 'con audio' está justo al final (ignora espacios)\nconst cmdRe = /con audio|con audio.\\s*$/i;\nitem.sendAudio = cmdRe.test(original);\n// Limpia solo esa parte final, dejando el resto intacto\nitem.cleanText = original.replace(cmdRe, \"\").trim();\nreturn [item];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -260
+      ],
+      "id": "4181410d-1c9f-486d-ab63-52e7bbca0233",
+      "name": "Flag"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -120,
+        460
+      ],
+      "id": "7c3bbba3-2351-42c5-afdc-4f20ad577da0",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "UJU8mlH2v4PwwngG",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.ClientText }}",
+        "options": {
+          "systemMessage": "=#SYSTEM  \nEres SynapBot, el asistente virtual de Synaptek.  \nTu misión: informar cálidamente sobre Synaptek, ayudar a los usuarios a entender su valor, avanzar a demo/precios/soporte y recolectar datos CLAVE de forma natural y secuencial.  \n**No uses información interna a menos que lo requiera la pregunta. Solo responde sobre Synaptek.**\n\n#ESTILO  \n– Siempre usa “tú”.  \n– 1 emoji por párrafo, al inicio o al final.  \n– SOLO pide un dato a la vez y agradece cada respuesta.  \n– Si el usuario pide info sobre Synaptek, responde con claridad y luego retoma la captura de datos.  \n– Si el usuario no quiere dar datos, respeta y ofrece contacto humano.  \n– Sé entusiasta cuando el usuario cuente su problemática y da dos o más beneficios concretos según el proceso mencionado.\n\n---\n\n#FLUJO DE CONVERSACIÓN\n\n¡Hola! 👋 ¿Quieres que te ayude a descubrir cómo Synaptek puede automatizar tareas para tu negocio o proyecto?\n\n[Espera respuesta]\n\n---\n\n¡Genial! 😊 ¿En qué sector o industria trabajas? Así te doy ideas personalizadas para automatizar y ahorrar tiempo.\n\n[Espera respuesta. Da un ejemplo breve según rubro; por ej.:]  \nComo administrador, Synaptek puede ayudarte a automatizar la gestión de agendas, seguimiento de tareas y comunicación interna para que ahorres tiempo y reduzcas errores. 📊\n\n---\n\n¿Qué proceso específico te gustaría optimizar o automatizar primero? Si tienes varios en mente, dime el que más te incomoda hoy. 🤔\n\n[Espera respuesta]\n\n---\n\n# RESPUESTA OPTIMIZADA CON ENTUSIASMO Y VALOR  \n[Cuando el usuario cuente el proceso, entusiásmate y muéstrale cómo Synaptek lo potencia:]  \n\n¡Gracias por compartirlo! 🙌 El llenado de formularios es un proceso perfecto para automatizar con Synaptek:  \n– Puedes captar la información desde WhatsApp, email o web sin errores  \n– Validar los datos en tiempo real para reducir retrabajos  \n– Ahorrarás tiempo y los resultados se integran directo con tus sistemas o bases de datos  \n¡Eso significa menos errores y más productividad cada día!  \n¿Me podrías decir tu nombre para personalizar la propuesta? 🙂\n\n[NO guardes ningún dato aún.]\n\n---\n\n¡Perfecto, gracias {{NOMBRE}}! 😊 Para enviarte el diagnóstico y ejemplos detallados, ¿cuál es tu correo electrónico?  \n(Tranquilo, solo usamos tu email para enviarte info y nunca lo compartimos.) 📩\n\n[Espera respuesta]\n\n---\n\n¿Prefieres que te contactemos por aquí (WhatsApp) o por correo? 📲\n\n[Espera respuesta]\n\n---\n\n# REGISTRO DE LEAD (sólo aquí, después de tener todos los datos)  \n[Cuando el usuario haya dado: sector, proceso a automatizar, nombre, correo, y canal preferido, REGISTRA todo en la hoja “DATOS” como sigue:]\n\n- **Nombre:** [usuario]  \n- **Teléfono**: [número WhatsApp/si visible]  \n- **Correo Electrónico:** [correo]  \n- **Rubro:** [sector]  \n- **Diagnóstico:** [proceso, volumen si existe, beneficios]  \n  Ejemplo:  \n  \"Administración, automatización del llenado de formularios (~100 diarios) para ahorrar tiempo, reducir errores e integrar datos directamente a bases internas vía Synaptek.\"  \n- **Fecha Ultima comunicación:** [fecha]  \n- **Canal Preferido:** [usuario]\n\n---\n\n# CIERRE\n\n¡Listo, {{NOMBRE}}! 🚀  \nGracias por compartir tu información y contarnos sobre tu interés en automatizar el proceso de [rellenar con proceso, ej: llenado de formularios].  \nEn breve recibirás tu diagnóstico personalizado (y rango de precios si se consultó) por [canal elegido].\n\n¿Hay algo más que te gustaría preguntar sobre Synaptek? 🤗  \n(Si necesitas atención humana, también puedes escribir a soporte@thesynaptek.com o en https://thesynaptek.com)\n\n---\n\n# SI EL USUARIO NO QUIERE DAR ALGÚN DATO  \nSin problema, {{NOMBRE}}. 😊 Puedes escribirme por aquí cuando quieras o contactar al equipo en soporte@thesynaptek.com.\n\n---\n\n# GENERAL  \n– Jamás pidas el número en WhatsApp, solo usa el visible del sistema  \n– No insistas si el usuario no quiere completar pasos  \n– Si pregunta detalles, responde, y retoma suave el flujo  \n– Al cierre, sé cálido y agradecido  \n– **NO registres datos parciales: sólo cuando esté toda la información relevante**\n\n---\n\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -88,
+        240
+      ],
+      "id": "dabf75c0-0008-4d94-bd5e-e78fac0498d0",
+      "name": "AI SYNAPTEK"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.contacts[0].wa_id }}",
+                    "rightValue": "51936877841",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "69b0ce1f-a774-448d-915d-72731a21683d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ADMIN"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "53955e29-f2c3-41ce-89da-1998974348ef",
+                    "leftValue": "={{ $json.contacts[0].wa_id }}",
+                    "rightValue": "=51936877841",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CLIENTE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d039adb2-e94f-4740-9796-52f1085d5bc7",
+                    "leftValue": "={{ $json.contacts[0].wa_id }}",
+                    "rightValue": "51996838067",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "papa"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -560,
+        -210
+      ],
+      "id": "9fdeb598-3c74-4ad9-bab7-1527afc0f624",
+      "name": "ADMIN O CLIENTE"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=={{ $json.cleanText || $json.image_description }}",
+        "options": {
+          "systemMessage": "=Eres un asistente virtual SynapBot para Synaptek, encargado de contactar leads y ayudar al administrador a convertir prospectos internos explicando el valor, retorno y ventajas de la automatización. También eres capaz de asistir con análisis avanzados de trading usando herramientas de backtesting.\n\nContexto Synaptek:\nTransformamos empresas con automatización de procesos, integración de sistemas e inteligencia artificial.\nLos clientes ahorran horas de trabajo, evitan errores, aumentan ingresos y obtienen resultados rápidos y medibles.\nAtendemos comercio, salud, servicios, logística, educación, manufactura y más.\n\nTus herramientas:\nGmail GET: para ver correos (a pedido).\nGmail SEND: solo sugieres emails; envía solo si el usuario confirma.\nDATOS READ: consulta datos del lead (nombre, correo, rubro, diagnóstico, teléfono, etc.).\nHTTPS request: puedes activarlo cuando te pida que quiero una senal de trading Y SOLO ACTIVARAS ESE NODO, NADA MAS\n\nBacktester (TRADING):\nPermite consultar, importar y guardar automáticamente las operaciones de trading del usuario en su diario de backtest, extrayendo los trades directamente desde la API de Binance, generando resúmenes y guardando el resultado en Google Sheets para su análisis posterior.\nÚsalo solo si el usuario lo solicita con frases como “actualiza mi backtester”, “coloca mis trades en el backtester”, “guarda mis trades en el diario”, o similares, o si te piden un resumen de su trading reciente.\n\nBacktester READ:\nPermite acceder, analizar y generar reportes a partir de los registros históricos almacenados en el diario de backtesting (Google Sheets).\nExtrae métricas clave como total de trades, win-rate, factor de beneficio, ganancias/promedios por operación, distribución de estrategias, fechas específicas.\nFiltra y compara periodos a pedido (por día, semana, mes, rango de fechas, etc.), calcula estadísticas avanzadas y entrega resúmenes útiles o insights de performance para la toma de decisiones.\nActívalo solo cuando el usuario lo solicite con frases como:\n– “¿Cuál fue mi desempeño en junio?”\n– “Muéstrame mi winrate del mes pasado”\n– “¿Cuántos trades hice esta semana?”\n– “¿Cuál fue mi mejor mes de backtesting?”\n– “¿Cómo va mi profit factor en 2024?”\n– “Dame el resumen de mis operaciones desde el 10 de junio”\n– “Compara mi trading de marzo y abril”\n– “Resúmeme mis ganancias netas hoy”\ny similares.\n\nInstrucciones para el uso de herramientas de Backtesting:\nAl usar Backtester READ, filtra por el periodo, fecha o parámetros pedidos (día, semana, mes, año, rango, side o cualquier criterio mencionado por el usuario).\nCalcula y responde con claridad cualquier métrica pedida, ejemplo:\nTotal de trades abiertos/cerrados\nNúmero y porcentaje de operaciones ganadoras/perdedoras (win-rate)\nGanancia/perdida neta acumulada (NetPnL, CumPnL)\nGanancia promedio y pérdida promedio\nProfit factor\nMejor y peor trade\nEstadísticas por tipo de operación (long/short)\nComparaciones entre dos periodos\nSi el usuario pide comparativas, prepara una tabla y un análisis simple (por ejemplo, “En marzo tu winrate fue X%, en abril Y%. Mejoraste/disminuiste en Z puntos.”)\nSi la solicitud es ambigua, pide precisión (“¿Sobre qué fechas deseas el resumen?”)\nInstrucciones para redacción de EMAIL\nUsar asunto atractivo y centrado en resultados.\nSaludar con el nombre real del lead.\nBreve presentación Synaptek (1–2 líneas máximo).\nListar en bullets personalizados para su rubro cómo Synaptek resuelve la(s) necesidad(es) del lead.\nExplicar claramente el ahorro en horas, errores y costos, recalcando retorno rápido e impacto tangible.\nIlustrar con ejemplos/resultados (“Un negocio como el tuyo ahorró X horas y USD XX desde el primer trimestre…”).\nSugerir un rango de inversión referencial (setup único y mantenimiento), tomando los valores del rubro (tabla más abajo).\nInvitar a agendar llamada rápida o recibir info con su caso.\nFirma cálida y profesional.\nMostrar siempre el correo generado al usuario para pedir confirmación, edición o cancelación antes de enviar.\nTras cada paso, resume la acción y orienta el siguiente.\nEjemplos de prompts útiles para quien usa backtesting:\n“Dame el resumen de mis trades desde el 1 de junio”\n“¿Cuántas operaciones hice en los últimos 7 días?”\n“¿Cuál fue mi ganancia neta esta semana?”\n“Compara mis resultados de mayo y junio”\n“¿Cuál es mi winrate mensual este año?”\n“¿Qué estrategia me ha dado mejores resultados en el mes pasado?”\n“¿Cuál fue mi peor día de operaciones?”\n“Resúmeme mis estadísticas del 2024”\nEjemplo de respuesta para resúmenes de backtesting:\nResumen de junio 2025:\n\nTotal de trades: 23\nGanadoras: 16 (69.6%)\nPerdedoras: 7 (30.4%)\nGanancia neta acumulada (NetPnL): $384\nProfit Factor: 2.21\nMejor trade: $53 el 13/06/2025\nPeor trade: -$12 el 05/06/2025\nEstrategia más rentable: LONG (profit factor 2.53, 12 trades)\n¿Quieres el detalle por semana, o comparar con el mes anterior?\n\nEjemplos de bullets y resultados según rubro\nComercio/Retail:\n\nAutomatizas ventas, cobranza y gestión de inventario en tiempo real.\nEvitas errores de stock y pierdes menos ventas por falta de productos.\nRespondes a tus clientes más rápido y recuperas carritos abandonados.\nEjemplo: “Negocios similares ahorran 20 horas/mes en inventario y mejoran ingresos hasta 18% al año.”\nSalud:\n\nAgenda y recuerda citas automáticamente, reduciendo ausencias.\nDigitalizas expedientes y recibes alertas de pacientes en riesgo.\nRespondes consultas por WhatsApp o email sin esfuerzo.\nEjemplo: “Clínicas han reducido en 40% los errores en turnos y mejorado satisfacción de pacientes en el primer mes.”\nServicios profesionales:\n\nAutomatizas cotizaciones, pagos y envío de reportes.\nRecopilas documentación y atiendes por WhatsApp sin demoras.\nFacilitas seguimiento post-servicio y reduces tareas administrativas.\nEjemplo: “Despachos evitan hasta 30% de errores en documentos y ahorran 2 horas diarias en seguimiento.”\nEducación:\n\nAutomatizas inscripciones y matrículas online.\nGestionas recordatorios a alumnos y respuestas a dudas en tiempo real.\nGeneras certificados y diplomas sin esfuerzo manual.\nEjemplo: “Institutos reducen 50% de cargas administrativas en la primera temporada de matrículas.”\nLogística/Industria/Manufactura:\n\nIntegras órdenes desde múltiples canales sin intervención manual.\nInformas estados de pedido automático a clientes/proveedores.\nReduces errores en bodega, picking y envíos.\nEjemplo: “Empresas logísticas consiguen ahorros de 25 horas/mes y reducen reclamos hasta un 25% desde el primer mes.”\nRangos de inversión referencial por rubro (para automatización)\nComercio/Retail:\n\nSetup único: USD 1,000–2,500 (pequeño), USD 2,500–5,000 (mediano), hasta USD 10,000+ (grande)\nMantenimiento mensual: USD 99–299\nServicios Profesionales:\n\nSetup único: USD 800–2,500\nMantenimiento mensual: USD 79–199\nSalud:\n\nSetup único: USD 1,200–2,500 (consultorio), hasta USD 6,000+ (clínica)\nMantenimiento mensual: USD 129–399\nEducación:\n\nSetup único: USD 900–4,500\nMantenimiento mensual: USD 99–299\nLogística / Industria / Manufactura:\n\nSetup único: USD 1,500–10,000\nMantenimiento mensual: USD 149–399\nLos montos finales dependen de procesos a automatizar, integraciones y nivel de personalización.\nEl mantenimiento mensual cubre soporte, monitoreo y ajustes menores (evolutivos se cotizan aparte).\n\nModelo de email persuasivo para lead (personaliza el rubro/proceso):\nAsunto: Comienza a ahorrar tiempo y crecer con Synaptek\n\nHola [NOMBRE_DEL_LEAD],\n\nSoy Luis de Synaptek. Ayudo a empresas como la tuya a dejar atrás procesos manuales, digitalizarse y crecer más rápido con automatización inteligente.\n\nVimos que te interesa:\n– [Ejemplo bullets de tu rubro: ver arriba]\n\nCon Synaptek puedes:\n– Ahorrar decenas de horas al mes en tareas que hoy son manuales (recuperas inversión desde el primer trimestre)\n– Evitar errores y retrabajos, mejorando la experiencia de clientes y equipo\n– Tomar mejores decisiones con datos en tiempo real y liberar recursos para crecer\n\nPor ejemplo, [nombre rubro similar] ya están aprovechando estos beneficios: ahorran [horas/monto], bajan errores más de [x]% y logran ventas o atención más ágiles desde el primer mes.\n\nPara proyectos similares, la inversión suele implicar:\n– Un pago único de setup: desde [rango setup]\n– Mantenimiento mensual: desde [rango mantenimiento]\n\nAsí, la automatización se paga sola en pocos meses, y tu empresa gana eficiencia y competitividad real.\n\n¿Agendamos una llamada rápida para mostrarte cómo se vería esto en tu negocio, o prefieres que te envíe más información por correo?\n\n¡Estoy seguro de que verás el valor apenas empecemos!\n\nSaludos cordiales,\nLuis Klepatzky\nEspecialista en Transformación Digital\nSynaptek\nhttps://thesynaptek.com\n+51936877841\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1380,
+        -260
+      ],
+      "id": "147e0382-8d51-456f-ba9b-49a1e273ba55",
+      "name": "AI ADMIN"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "831ba7e0-6965-4f62-ae03-3f074a373fa4",
+              "name": "ClientText",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -340,
+        240
+      ],
+      "id": "d2bb548f-0db2-4615-a626-f5ea9aa4d518",
+      "name": "CLIENTE"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('WhatsApp Trigger').item.json.metadata.phone_number_id }}",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+        "textBody": "={{ $json.output || $json.image_description}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        320,
+        240
+      ],
+      "id": "4c9223db-ff8e-4850-b0f2-34643ee65718",
+      "name": "RESPUESTA CLIENTE",
+      "webhookId": "c3cb1581-4f72-4077-b0c9-bdc20a313a78",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Ss5DHHM3UFXRLLHi",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        460
+      ],
+      "id": "ee2b8147-7dd1-4e12-860e-a3ad4d3e7f3a",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1gTPtFGWMvqHCZtlAgoGXIKEM2qoNs2mDZm0mLWpz3EA",
+          "mode": "list",
+          "cachedResultName": "CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gTPtFGWMvqHCZtlAgoGXIKEM2qoNs2mDZm0mLWpz3EA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gTPtFGWMvqHCZtlAgoGXIKEM2qoNs2mDZm0mLWpz3EA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nombre": "={{ $('WhatsApp Trigger').item.json.contacts[0].profile.name }}",
+            "Telefono": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+            "Fecha": "={{ $now.toISO() }}",
+            "Diagnostico": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Diagnostico', ``, 'string') }}",
+            "Rubro": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Rubro', ``, 'string') }}",
+            "Correo Electronico": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Correo_Electronico', ``, 'string') }}",
+            "Canal Preferido": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Canal_Preferido', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Nombre",
+              "displayName": "Nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Telefono",
+              "displayName": "Telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Correo Electronico",
+              "displayName": "Correo Electronico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Rubro",
+              "displayName": "Rubro",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Diagnostico",
+              "displayName": "Diagnostico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Fecha",
+              "displayName": "Fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Canal Preferido",
+              "displayName": "Canal Preferido",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        120,
+        460
+      ],
+      "id": "7cae899e-d4af-4cf4-aeb5-bc26d1fe8500",
+      "name": "DATOS",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BQmZ5qXps8Q00aaK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4cbf6ac5-0b88-4d89-a9d1-001c8bf9f02d",
+              "leftValue": "={{ $json.messages[0] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -780,
+        -210
+      ],
+      "id": "af0c7829-f91c-48c2-9d7b-5e9e8390d3cd",
+      "name": "SOLO MENSAJES"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages[0].audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "0c243042-d273-4265-a4af-046cb55afe22"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a5927ec8-0212-4e36-be60-9701481c0b1c",
+                    "leftValue": "={{ $json.messages[0].text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "44efad17-2d0c-4520-9789-48228dc93c7f",
+                    "leftValue": "={{ $json.messages[0].image }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -240,
+        -260
+      ],
+      "id": "30707e2f-51f6-4faf-99eb-26c671b07fdf",
+      "name": "ADMIN"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "text": "Describe esta imagen a detalle",
+        "inputType": "base64",
+        "options": {
+          "maxTokens": 80
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        540,
+        -60
+      ],
+      "id": "acf7b322-5f10-43a5-8552-fa8e1b62d7df",
+      "name": "Analizar Imagen",
+      "credentials": {
+        "openAiApi": {
+          "id": "UJU8mlH2v4PwwngG",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1440,
+        -60
+      ],
+      "id": "016a5fd0-2384-4d92-a5a4-576040131e3a",
+      "name": "Gmail SEND",
+      "webhookId": "d4da3463-3a4a-497e-87ad-508ced71a92f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dCWWHOCRDuZq4HsG",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 20,
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.1,
+      "position": [
+        1540,
+        -60
+      ],
+      "id": "cc6ef958-dd61-45aa-bb6e-0722827ab7af",
+      "name": "Gmail GET",
+      "webhookId": "fa76e215-a9f9-499d-ab3b-c73f55900ab0",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dCWWHOCRDuZq4HsG",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1gTPtFGWMvqHCZtlAgoGXIKEM2qoNs2mDZm0mLWpz3EA",
+          "mode": "list",
+          "cachedResultName": "CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gTPtFGWMvqHCZtlAgoGXIKEM2qoNs2mDZm0mLWpz3EA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gTPtFGWMvqHCZtlAgoGXIKEM2qoNs2mDZm0mLWpz3EA/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        1640,
+        -60
+      ],
+      "id": "4157d12e-e238-4dee-b77e-7d2a9dc894f6",
+      "name": "DATOS READ",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BQmZ5qXps8Q00aaK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json[\"url\"] }} \n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-MBX-APIKEY",
+              "value": "={{ $json['apiKey']}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        -560
+      ],
+      "id": "8df76df9-3baf-4bb1-85a3-2414ca20f7a9",
+      "name": "TRADES"
+    },
+    {
+      "parameters": {
+        "jsCode": "function round2(n) { return Number(Number(n).toFixed(2)); }\nfunction round6(n) { return Number(Number(n).toFixed(6)); }\n\nfunction formatFecha(fecha) {\n  // Lima/Peru time GMT-5\n  const d = new Date(new Date(fecha).getTime() - (5 * 60 * 60 * 1000));\n  const pad = n => String(n).padStart(2, '0');\n  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;\n}\n\n// Agregar filtro de fecha si lo necesitas\nconst FECHA_MINIMA = new Date(\"2025-06-11T00:00:00\");\nconst trades = items\n  .map(i => i.json)\n  .filter(t => new Date(t.time) >= FECHA_MINIMA) // <-- Filtro opcional\n  .sort((a, b) => a.time - b.time);\n\nconst result = [];\nlet bufferEntradas = [];\nlet bufferSalidas = [];\n\nfunction agregarTradeCompletado(entradas, salidas) {\n  if (entradas.length > 0 && salidas.length > 0) {\n    const Qty = entradas.reduce((sum, t) => sum + Number(t.qty), 0);\n    const quoteQty = entradas.reduce((sum, t) => sum + Number(t.quoteQty), 0);\n    const avgEntryPrice = Qty > 0 ? entradas.reduce((sum, t) => sum + Number(t.price) * Number(t.qty), 0) / Qty : 0;\n    const qtySalida = salidas.reduce((sum, t) => sum + Number(t.qty), 0);\n    const avgExitPrice = qtySalida > 0 ? salidas.reduce((sum, t) => sum + Number(t.price) * Number(t.qty), 0) / qtySalida : 0;\n    const totalCommission = [...entradas, ...salidas].reduce((sum, t) => sum + Number(t.commission || 0), 0);\n    const realizedPnl = salidas.reduce((sum, t) => sum + Number(t.realizedPnl || 0), 0);\n\n    result.push({\n      SignalTime: formatFecha(entradas[0].time),\n      Side: entradas[0].side === 'BUY' ? 'LONG' : 'SHORT',\n      EntryPrice: round2(avgEntryPrice),\n      ExitTime: formatFecha(salidas[salidas.length-1].time),\n      ExitPrice: round2(avgExitPrice),\n      Quantity: round2(quoteQty),\n      Commission: round6(totalCommission),\n      Qty: round6(Qty),\n      realizedPnl: round2(realizedPnl),\n      // Opcional: agregar más métricas\n      NumEntradas: entradas.length,\n      NumSalidas: salidas.length,\n      Symbol: entradas[0].symbol\n    });\n  }\n}\n\nfor (let t of trades) {\n  if (Number(t.realizedPnl) === 0) {\n    if (bufferSalidas.length > 0) {\n      agregarTradeCompletado(bufferEntradas, bufferSalidas);\n      bufferEntradas = [];\n      bufferSalidas = [];\n    }\n    bufferEntradas.push(t);\n  } else {\n    bufferSalidas.push(t);\n  }\n}\n\nif (bufferEntradas.length > 0 && bufferSalidas.length > 0) {\n  agregarTradeCompletado(bufferEntradas, bufferSalidas);\n}\n\nlet cumPnL = 0;\nconst resultWithCumPnL = result.map(trade => {\n  cumPnL += Number(trade.realizedPnl || 0);\n  return { ...trade, CumPnL: round2(cumPnL) };\n});\n\n// Opcional: Log para debug\nconsole.log(`Procesados ${resultWithCumPnL.length} trades completos`);\nconsole.log(`PnL Total: ${round2(cumPnL)}`);\n\nreturn resultWithCumPnL.map(r => ({ json: r }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2380,
+        -560
+      ],
+      "id": "3272f5cd-d7f5-44ac-913e-4813511a6e05",
+      "name": "LogTrades"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a2927b49-2dcf-489c-9b1f-ebb984514755",
+              "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].text.body }}",
+              "rightValue": "Backtester",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1840,
+        -260
+      ],
+      "id": "6e11c34a-96cb-44d7-a1a3-e620d30c9e83",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE",
+          "mode": "list",
+          "cachedResultName": "BACKTEST",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "BINANCE TRADES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "SignalTime": "={{ $json.SignalTime }}",
+            "Side": "={{ $json.Side }}",
+            "EntryPrice": "={{ $json.EntryPrice }}",
+            "ExitTime": "={{ $json.ExitTime }}",
+            "ExitPrice": "={{ $json.ExitPrice }}",
+            "Quantity": "={{ $json.Quantity }}",
+            "Qty": "={{ $json.Qty }}",
+            "Commission": "={{ $json.Commission }}",
+            "realizedPnl": "={{ $json.realizedPnl }}",
+            "NumEntradas": "={{ $json.NumEntradas }}",
+            "NumSalidas": "={{ $json.NumSalidas }}",
+            "Symbol": "={{ $json.Symbol }}",
+            "CumPnL": "={{ $json.CumPnL }}"
+          },
+          "matchingColumns": [
+            "SignalTime"
+          ],
+          "schema": [
+            {
+              "id": "SignalTime",
+              "displayName": "SignalTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Side",
+              "displayName": "Side",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "EntryPrice",
+              "displayName": "EntryPrice",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ExitTime",
+              "displayName": "ExitTime",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ExitPrice",
+              "displayName": "ExitPrice",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Quantity",
+              "displayName": "Quantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Commission",
+              "displayName": "Commission",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Qty",
+              "displayName": "Qty",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "realizedPnl",
+              "displayName": "realizedPnl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NumEntradas",
+              "displayName": "NumEntradas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "NumSalidas",
+              "displayName": "NumSalidas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Symbol",
+              "displayName": "Symbol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "CumPnL",
+              "displayName": "CumPnL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2560,
+        -560
+      ],
+      "id": "b5d50117-8616-42b8-88f2-0d9a5ec43b70",
+      "name": "BACKTESTER",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BQmZ5qXps8Q00aaK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "717850468068138",
+        "recipientPhoneNumber": "51936877841",
+        "textBody": "✅ Los logs de tu Backtest han sido actualizados exitosamente. Puedes consultar tu Google Sheet siempre que lo necesites, o pedirme un resumen por aquí.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        2920,
+        -560
+      ],
+      "id": "de9f31fd-fbf9-4f88-a03d-3d47d8fea8da",
+      "name": "WhatsApp Business Cloud1",
+      "webhookId": "e6dc085b-0b15-4041-9419-469ecd5c8f71",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Ss5DHHM3UFXRLLHi",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    total: $items.length\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2740,
+        -560
+      ],
+      "id": "6ded706c-ca83-470b-9449-7bb159cac63b",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE",
+          "mode": "list",
+          "cachedResultName": "LOG",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "BINANCE TRADES",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        1780,
+        -60
+      ],
+      "id": "38035174-205a-42ee-b152-2b71cadcca7a",
+      "name": "BACKTESTER READ",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BQmZ5qXps8Q00aaK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE",
+          "mode": "list",
+          "cachedResultName": "LOG",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1046056566,
+          "mode": "list",
+          "cachedResultName": "Hoja 2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1GUFGOkrHfG2kHy0_DP4C8tVs1QzKlKlD4TDVOAPdUyE/edit#gid=1046056566"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "SEÑAL": "={{ $json.output }}",
+            "FECHA": "={{ $('15 MIN1').item.json.timestamp }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "SEÑAL",
+              "displayName": "SEÑAL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "FECHA",
+              "displayName": "FECHA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        3180,
+        280
+      ],
+      "id": "6cbc2be4-0909-47f2-8b62-56427f14041d",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BQmZ5qXps8Q00aaK",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "717850468068138",
+        "recipientPhoneNumber": "51936877841",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        3180,
+        60
+      ],
+      "id": "e231a8e1-edee-4b76-ab01-5cf1efe18abe",
+      "name": "WhatsApp Business Cloud",
+      "webhookId": "b1379498-44a4-43a4-84ab-fbc61a24b065",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Ss5DHHM3UFXRLLHi",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */15 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        2000,
+        0
+      ],
+      "id": "3cba58d7-00b5-488a-be6d-4a8f4293b2f4",
+      "name": "15 MIN1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.binance.com/api/v3/klines",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "BTCUSDC"
+            },
+            {
+              "name": "interval",
+              "value": "15m"
+            },
+            {
+              "name": "limit",
+              "value": "200"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        60
+      ],
+      "id": "9f58ea0b-89c4-4880-a127-2ad2891186fc",
+      "name": "GET OHLC1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// devolvemos un array con un solo elemento: la última vela\nreturn [ items[ items.length - 1 ] ];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2680,
+        60
+      ],
+      "id": "82375f06-2f89-4832-9954-811bba3e13e5",
+      "name": "ULTIMA VELA"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n  \"time\": {{ $json.time }},\n  \"open\": {{ $json.open }},\n  \"high\": {{ $json.high }},\n  \"low\": {{ $json.low }},\n  \"close\": {{ $json.close }},\n  \"volume\": {{ $json.volume }},\n  \"ema9\": {{ $json.ema9 }},\n  \"ema21\": {{ $json.ema21 }},\n  \"ema50\": {{ $json.ema50 }},\n  \"ema200\": {{ $json.ema200 }},\n  \"rsi14\": {{ $json.rsi14 }},\n  \"bb_mid\": {{ $json.bb_mid }},\n  \"bb_up\": {{ $json.bb_up }},\n  \"bb_dn\": {{ $json.bb_dn }},\n  \"vol_avg20\": {{ $json.vol_avg20 }},\n  \"atr14\": {{ $json.atr14 }},\n  \"macd\": {{ $json.macd }},\n  \"macd_signal\": {{ $json.macd_signal }},\n  \"macd_hist\": {{ $json.macd_hist }},\n  \"adx14\": {{ $json.adx14 }},\n  \"di_plus\": {{ $json.di_plus }},\n  \"di_minus\": {{ $json.di_minus }},\n  \"supertrend\": {{ $json.supertrend }},\n  \"supertrend_dir\": {{ $json.supertrend_dir }},\n  \n}\n",
+        "options": {
+          "systemMessage": "=Eres un agente AI de trading. Recibes datos OHLC y técnicos de la última vela de BTCUSDC en temporalidad de 15 minutos.\n\nTu tarea es analizar el contexto y emitir una señal concisa: SOLO responde \"LONG\", \"SHORT\" o \"NO TRADE\" seguido de una breve explicación técnica (máximo dos frases y números: valores, ratios, medias, etc.), el ratio SL-TP ideal según el contexto y la volatilidad (ejemplo: 1:1, 1:2, 1:3, etc., seguido de los precios), y si es tendencia bajista o alcista y por qué. Indica también si la entrada es por \"reversal anticipado/momentum temprano\" o \"tendencia mayor confirmada\".\n\nReglas para decidir (ajustadas y mejoradas):\n\nSEÑAL LONG:\n\nCierre (\"close\") mayor que EMA9, EMA21 y EMA50.\nCierre por encima o tocando la EMA200, aunque EMA50 no haya cruzado todavía la EMA200, si la diferencia entre EMA50 y EMA200 es menor al 0.5% y las EMAs cortas están claramente apiladas arriba, y el resto de condiciones es alcista.\nSi EMA50 > EMA200, tendencia mayor confirmada.\nSi todavía EMA50 < EMA200 pero está muy cerca, considerar como \"reversal anticipado\".\nRSI14 > 60. También permitido si RSI está entre 58–60 si todos los otros indicadores son inequívocamente alcistas.\nCierre mayor que bb_mid (media Bollinger).\nMACD > macd_signal y histograma MACD positivo.\nsupertrend_dir = 1 si existe el dato, pero si no y el resto es claro, no es obligatoria.\ndi_plus > di_minus y adx14 > 20 (o entre 19–20 si el resto es muy claro).\nVolumen es MAYOR O IGUAL al 80% de vol_avg20 y en aumento respecto a las 2 velas previas.\natr14 mayor al 67% del ATR máximo reciente (si tienes ese dato).\nSEÑAL SHORT:\n\nCierre menor que EMA9, EMA21 y EMA50.\nCierre por debajo o tocando la EMA200, aunque EMA50 no haya cruzado, si la diferencia es menor al 0.5% y las EMAs cortas están apiladas a la baja y el resto acompaña.\nSi EMA50 < EMA200, tendencia mayor confirmada.\nSi EMA50 está muy cerca de EMA200, considerar como \"reversal anticipado\".\nRSI14 < 40, o hasta 42 si todos los otros indicadores son claramente bajistas.\nCierre menor que bb_mid.\nMACD < macd_signal y histograma negativo.\nsupertrend_dir = -1 si existe el dato, pero si no y el resto es muy claro, no es obligatoria.\ndi_minus > di_plus y adx14 > 20 (o entre 19–20 si el resto acompaña).\nVolumen MAYOR O IGUAL al 80% vol_avg20 y creciendo respecto a las dos previas.\natr14 mayor al 67% del ATR máximo reciente (si tienes ese dato).\nNO TRADE (y filtros avanzados):\n\nSi NO se cumplen TODAS las condiciones anteriores para LONG ni todas para SHORT, responde \"NO TRADE\".\nTambién responde \"NO TRADE\" si:\nRSI14 entre 42–58 (salvo momentum fortísimo en el resto).\nVolumen menor al 80% del promedio reciente y NO crece contra las últimas 2 velas.\nSeñales contradictorias.\nadx14 < 19 y sin momentum claro.\nATR14 es bajo.\nFalta algún dato vital (menciónalo explícitamente).\nDivergencia clara entre el precio y RSI/MACD en la última vela (por ejemplo, precio hace nuevo mínimo/máximo pero RSI o MACD no lo confirma), prioriza NO TRADE.\nSi la última vela tiene cuerpo menor al 40% del rango total y mechas que suman 1.5x o más el ATR14, responde NO TRADE: posible manipulación/lateralidad.\nSi ATR14 > 2x el ATR20 promedio más reciente, responde NO TRADE por volatilidad anómala.\nSi el volumen ha caído secuencialmente en las últimas 3 velas y está <70% de vol_avg20 en todas, responde NO TRADE.\nSi la misma señal (“LONG” o “SHORT”) fue emitida en 3 de las últimas 4 velas y el cierre actual no hace nuevo máximo/mínimo, responde NO TRADE.\nSi hay un gap (close-open) mayor al 1% del precio de cierre anterior, responde NO TRADE salvo que todos los otros criterios estén alineados.\nSIEMPRE prioriza manejo del riesgo y evita señales inestables salvo excepciones anteriores.\nSL-TP (Stop-Loss / Take-Profit):\nSugiere ratio SL-TP recomendado basándote en la volatilidad (ATR14) y fuerza de señal.\n\nRatio conservador (1:1, 1:1.5) si volatilidad es baja o señal débil; más amplio (1:2, 1:3 o superior) si volatilidad y momentum son evidentes.\nSL nunca debe ser inferior al 0.5% del precio de entrada o al 30% del ATR14, el que sea mayor.\nFormato de la respuesta:\nSolo responde así:\n\nLONG. Explicación técnica con números. Ratio SL-TP sugerido X:Y (precios). Explica si es “reversal anticipado” o “tendencia mayor confirmada”.\nSHORT. Explicación técnica con números. Ratio SL-TP sugerido X:Y (precios). Explica si es “reversal anticipado” o “tendencia mayor confirmada”.\nNO TRADE. Explicación técnica. No escribas más de dos frases de explicación técnica. Si falta algún dato vital, responde \"NO TRADE\" y menciónalo. Solo responde la señal SI ES DIFERENTE a la señal anterior recibida (“prev_signal”). Si es igual, responde vacío (\"\").\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1840,
+        540
+      ],
+      "id": "f379f71d-1ba7-4e29-b964-3a286b7247fd",
+      "name": "Agente Interpretador de Senales",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Extraemos arrays de precio y volumen\nconst closes  = items.map(i => i.json.close);\nconst highs   = items.map(i => i.json.high);\nconst lows    = items.map(i => i.json.low);\nconst volumes = items.map(i => i.json.volume);\n\n// 2) EMAs general\nfunction ema(values, period) {\n  const k = 2 / (period + 1);\n  const out = Array(values.length).fill(undefined);\n  const sma = values.slice(0, period).reduce((a, b) => a + b, 0) / period;\n  out[period - 1] = sma;\n  for (let i = period; i < values.length; i++) {\n    out[i] = (values[i] - out[i - 1]) * k + out[i - 1];\n  }\n  return out;\n}\n\n// 3) RSI Wilder\nfunction rsi(values, period) {\n  const out = Array(values.length).fill(undefined);\n  let gains = 0, losses = 0;\n  for (let i = 1; i <= period; i++) {\n    const d = values[i] - values[i - 1];\n    if (d > 0) gains += d; else losses -= d;\n  }\n  let avgG = gains / period, avgL = losses / period;\n  for (let i = period + 1; i < values.length; i++) {\n    const d = values[i] - values[i - 1];\n    avgG = ((avgG * (period - 1)) + Math.max(d, 0)) / period;\n    avgL = ((avgL * (period - 1)) + Math.max(-d, 0)) / period;\n    const rs = avgG / avgL;\n    out[i] = 100 - (100 / (1 + rs));\n  }\n  return out;\n}\n\n// 4) Bollinger, VolAvg, ATR\nfunction rollingStats(values, period, multBB) {\n  const mb = Array(values.length).fill(undefined);\n  const ub = Array(values.length).fill(undefined);\n  const lb = Array(values.length).fill(undefined);\n  const volAvg = Array(values.length).fill(undefined);\n  const atr = Array(values.length).fill(undefined);\n\n  let sum = 0, sumSq = 0, volSum = 0;\n  let prevClose = values[0], atrSum = 0;\n\n  for (let i = 0; i < values.length; i++) {\n    sum += values[i];\n    sumSq += values[i] * values[i];\n    volSum += volumes[i];\n\n    // ATR true range\n    const tr = Math.max(\n      highs[i] - lows[i],\n      Math.abs(highs[i] - prevClose),\n      Math.abs(lows[i] - prevClose)\n    );\n    if (i === 0) atrSum = tr;\n    else atrSum += tr;\n\n    if (i >= period) {\n      sum -= values[i - period];\n      sumSq -= values[i - period] * values[i - period];\n      volSum -= volumes[i - period];\n      atrSum -= Math.max(\n        highs[i - period] - lows[i - period],\n        Math.abs(highs[i - period] - (i - period - 1 >= 0 ? closes[i - period - 1] : prevClose)),\n        Math.abs(lows[i - period] - (i - period - 1 >= 0 ? closes[i - period - 1] : prevClose))\n      );\n    }\n\n    if (i >= period - 1) {\n      const mean = sum / period;\n      const varp = (sumSq / period) - (mean * mean);\n      const sd = Math.sqrt(varp);\n      mb[i] = mean; ub[i] = mean + multBB * sd; lb[i] = mean - multBB * sd;\n      volAvg[i] = volSum / period;\n      atr[i] = atrSum / period;\n    }\n    prevClose = values[i];\n  }\n  return { mb, ub, lb, volAvg, atr };\n}\n\n// 5) MACD (12-26-9 por defecto)\nfunction macd(values, fast = 12, slow = 26, signal = 9) {\n  const emaFast = ema(values, fast);\n  const emaSlow = ema(values, slow);\n  const macdLine = values.map((_, i) =>\n    emaFast[i] !== undefined && emaSlow[i] !== undefined\n      ? emaFast[i] - emaSlow[i]\n      : undefined\n  );\n  const signalLine = ema(macdLine.map(v => v === undefined ? 0 : v), signal);\n  const hist = macdLine.map((v, i) =>\n    v !== undefined && signalLine[i] !== undefined\n      ? v - signalLine[i]\n      : undefined\n  );\n  return { macdLine, signalLine, hist };\n}\n\n// 6) ADX, DI+, DI- (14 por defecto)\nfunction adx(highs, lows, closes, period = 14) {\n  const len = highs.length;\n  const dxArr = Array(len).fill(undefined);\n  const adxArr = Array(len).fill(undefined);\n  const plusDI = Array(len).fill(undefined);\n  const minusDI = Array(len).fill(undefined);\n\n  let trArr = [], pdmArr = [], ndmArr = [];\n\n  for (let i = 1; i < len; i++) {\n    const tr = Math.max(\n      highs[i] - lows[i],\n      Math.abs(highs[i] - closes[i - 1]),\n      Math.abs(lows[i] - closes[i - 1])\n    );\n    trArr.push(tr);\n\n    const pdm = highs[i] - highs[i - 1] > lows[i - 1] - lows[i] && (highs[i] - highs[i - 1]) > 0\n      ? highs[i] - highs[i - 1] : 0;\n    const ndm = lows[i - 1] - lows[i] > highs[i] - highs[i - 1] && (lows[i - 1] - lows[i]) > 0\n      ? lows[i - 1] - lows[i] : 0;\n    pdmArr.push(pdm);\n    ndmArr.push(ndm);\n  }\n\n  function smma(arr, period) {\n    let out = Array(arr.length).fill(undefined);\n    let sum = arr.slice(0, period).reduce((a, b) => a + b, 0);\n    out[period - 1] = sum / period;\n    for (let i = period; i < arr.length; i++) {\n      out[i] = ((out[i - 1] * (period - 1)) + arr[i]) / period;\n    }\n    return out;\n  }\n\n  const atr = smma(trArr, period);\n  const pdi = smma(pdmArr, period).map((v, i) => v !== undefined && atr[i] !== undefined ? 100 * v / atr[i] : undefined);\n  const ndi = smma(ndmArr, period).map((v, i) => v !== undefined && atr[i] !== undefined ? 100 * v / atr[i] : undefined);\n\n  for (let i = period - 1; i < atr.length; i++) {\n    if (pdi[i] !== undefined && ndi[i] !== undefined) {\n      const sum = pdi[i] + ndi[i];\n      const dx = sum === 0 ? 0 : 100 * Math.abs(pdi[i] - ndi[i]) / sum;\n      dxArr[i + 1] = dx;\n      plusDI[i + 1] = pdi[i];\n      minusDI[i + 1] = ndi[i];\n    }\n  }\n  // ADX: smoothed average of DX\n  const adxVals = smma(dxArr.map(x => x === undefined ? 0 : x), period);\n  for (let i = 2 * period - 1; i < adxVals.length; i++) {\n    adxArr[i + 1] = adxVals[i];\n  }\n\n  return { adxArr, plusDI, minusDI };\n}\n\n// 7) SuperTrend (período 10, multiplicador 3 por defecto)\nfunction supertrend(highs, lows, closes, period = 10, mult = 3) {\n  const atr = ema(highs.map((_, i) => {\n    return Math.max(\n      highs[i] - lows[i],\n      Math.abs(highs[i] - closes[i - 1] || highs[i] - lows[i]),\n      Math.abs(lows[i] - closes[i - 1] || highs[i] - lows[i])\n    );\n  }), period);\n\n  const basicUpper = highs.map((h, i) => ((h + lows[i]) / 2) + mult * (atr[i] || 0));\n  const basicLower = lows.map((l, i) => ((highs[i] + l) / 2) - mult * (atr[i] || 0));\n  const superTrend = Array(closes.length).fill(null);\n\n  let prevSuper = null, prevDir = null;\n\n  for (let i = 0; i < closes.length; i++) {\n    if (i === 0) {\n      superTrend[i] = basicUpper[i];\n      prevSuper = basicUpper[i];\n      prevDir = -1;\n      continue;\n    }\n    let currSuper;\n    if (closes[i - 1] <= prevSuper) {\n      currSuper = Math.min(basicUpper[i], prevSuper);\n    } else {\n      currSuper = basicUpper[i];\n    }\n    if (closes[i] > currSuper) {\n      prevDir = 1;\n      prevSuper = basicLower[i];\n    } else {\n      prevDir = -1;\n      prevSuper = currSuper;\n    }\n    superTrend[i] = prevSuper;\n  }\n  // Señal: 1 = tendencia alcista, -1 = bajista\n  const trendDir = closes.map((close, i) => (close > superTrend[i] ? 1 : -1));\n  return { superTrend, trendDir };\n}\n\n// --------- CÁLCULO DE INDICADORES ---------\nconst ema9   = ema(closes, 9);\nconst ema21  = ema(closes, 21);\nconst ema50  = ema(closes, 50);\nconst ema200 = ema(closes, 200);\nconst rsi14  = rsi(closes, 14);\n\nconst { mb: bb_mid, ub: bb_up, lb: bb_dn, volAvg: vol_avg20, atr: atr14 } =\n  rollingStats(closes, 20, 2);\n\nconst macdObj = macd(closes);\nconst { adxArr, plusDI, minusDI } = adx(highs, lows, closes, 14);\nconst superTrendObj = supertrend(highs, lows, closes, 10, 3);\n\n// --------- RESULTADO: ENRIQUECEMOS ITEMS ---------\nreturn items.map((it, i) => ({\n  json: {\n    ...it.json,\n    ema9:        Number(ema9[i]?.toFixed(6)),\n    ema21:       Number(ema21[i]?.toFixed(6)),\n    ema50:       Number(ema50[i]?.toFixed(6)),\n    ema200:      Number(ema200[i]?.toFixed(6)),\n    rsi14:       Number(rsi14[i]?.toFixed(4)),\n    bb_mid:      Number(bb_mid[i]?.toFixed(2)),\n    bb_up:       Number(bb_up[i]?.toFixed(2)),\n    bb_dn:       Number(bb_dn[i]?.toFixed(2)),\n    vol_avg20:   Number(vol_avg20[i]?.toFixed(4)),\n    atr14:       Number(atr14[i]?.toFixed(4)),\n    macd:        Number(macdObj.macdLine[i]?.toFixed(6)),\n    macd_signal: Number(macdObj.signalLine[i]?.toFixed(6)),\n    macd_hist:   Number(macdObj.hist[i]?.toFixed(6)),\n    adx14:       Number(adxArr[i]?.toFixed(4)),\n    di_plus:     Number(plusDI[i]?.toFixed(4)),\n    di_minus:    Number(minusDI[i]?.toFixed(4)),\n    supertrend:  Number(superTrendObj.superTrend[i]?.toFixed(2)),\n    supertrend_dir: superTrendObj.trendDir[i], // 1=alcista, -1=bajista\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2520,
+        60
+      ],
+      "id": "d191337f-e005-4e9a-b98e-59941b4dc577",
+      "name": "GENERAR INDICADORES"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1) Recorremos todos los items:\n//    cada item.json es un objeto con claves '0','1',…'5'\nreturn items.map(item => {\n  // extraemos el objeto c\n  const c = item.json;\n\n  // c['0'] es el timestamp, c['1']..c['5'] son strings de precio/volumen\n  return {\n    json: {\n      time:   new Date( Number(c['0']) ).toISOString(), // convertimos a número\n      open:   parseFloat( c['1'] ),\n      high:   parseFloat( c['2'] ),\n      low:    parseFloat( c['3'] ),\n      close:  parseFloat( c['4'] ),\n      volume: parseFloat( c['5'] ),\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2360,
+        60
+      ],
+      "id": "f38897b8-621d-4f2f-8be3-10ec076df2eb",
+      "name": "MAPEAR VELAS"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2700,
+        440
+      ],
+      "id": "538310d3-b76a-44ba-9bd0-5872f6da8c53",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "UJU8mlH2v4PwwngG",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{\"alert-\"+$nowEpoch}}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        2860,
+        440
+      ],
+      "id": "4d43136b-6581-4bcc-baf2-d5c7cd788ce9",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Si vienen tus datos crudos con claves numéricas, los convertimos a OHLCV estándar:\nif (items[0]?.json?.['0']) {\n  items = items.map(item => {\n    const k = item.json;\n    return {\n      json: {\n        time:   new Date(Number(k['0'])).toISOString(),\n        open:   parseFloat(k['1']),\n        high:   parseFloat(k['2']),\n        low:    parseFloat(k['3']),\n        close:  parseFloat(k['4']),\n        volume: parseFloat(k['5']),\n      }\n    }\n  });\n}\n\n// 2. Crea arrays de cada variable OHLCV:\nconst closeArray  = items.map(i => i.json.close);\nconst highArray   = items.map(i => i.json.high);\nconst lowArray    = items.map(i => i.json.low);\nconst openArray   = items.map(i => i.json.open);\nconst volumeArray = items.map(i => i.json.volume);\n\n// ----- INDICADORES -----\n\nfunction calcEMA(valuesArray, period) {\n  const multiplier = 2 / (period + 1);\n  const result = Array(valuesArray.length).fill(undefined);\n  const sma = valuesArray.slice(0, period).reduce((a,b) => a+b, 0) / period;\n  result[period - 1] = sma;\n  for (let j = period; j < valuesArray.length; j++) {\n    result[j] = (valuesArray[j] - result[j-1]) * multiplier + result[j-1];\n  }\n  return result;\n}\n\nfunction calcRSIWilder(valuesArray, period) {\n  const result = Array(valuesArray.length).fill(undefined);\n  let gains = 0, losses = 0;\n  for (let k = 1; k <= period; k++) {\n    const diff = valuesArray[k] - valuesArray[k-1];\n    if (diff > 0) gains += diff; else losses -= diff;\n  }\n  let avgGain = gains / period, avgLoss = losses / period;\n  for (let m = period + 1; m < valuesArray.length; m++) {\n    const d = valuesArray[m] - valuesArray[m-1];\n    avgGain = ((avgGain * (period - 1)) + Math.max(d,0)) / period;\n    avgLoss = ((avgLoss * (period - 1)) + Math.max(-d,0)) / period;\n    const rs = avgLoss === 0 ? 0 : avgGain / avgLoss;\n    result[m] = avgLoss === 0 ? 100 : 100 - (100 / (1 + rs));\n  }\n  return result;\n}\n\nfunction calcBBVolATR(closeArr, highArr, lowArr, volArr, period, multBB) {\n  const bbMidArr = Array(closeArr.length).fill(undefined);\n  const bbUpperArr = Array(closeArr.length).fill(undefined);\n  const bbLowerArr = Array(closeArr.length).fill(undefined);\n  const volAvgArr = Array(closeArr.length).fill(undefined);\n  const atrArr = Array(closeArr.length).fill(undefined);\n\n  let sumClose = 0, sumCloseSq = 0, sumVol = 0, prevClose = closeArr[0], sumATR = 0;\n  for(let n=0;n<closeArr.length;n++) {\n    sumClose += closeArr[n];\n    sumCloseSq += closeArr[n]*closeArr[n];\n    sumVol += volArr[n];\n    const trueRange = Math.max(\n      highArr[n]-lowArr[n],\n      Math.abs(highArr[n]-prevClose),\n      Math.abs(lowArr[n]-prevClose)\n    );\n    if (n === 0) sumATR = trueRange;\n    else sumATR += trueRange;\n\n    if (n >= period) {\n      sumClose -= closeArr[n-period];\n      sumCloseSq -= closeArr[n-period]*closeArr[n-period];\n      sumVol -= volArr[n-period];\n      sumATR -= Math.max(\n        highArr[n-period]-lowArr[n-period],\n        Math.abs(highArr[n-period]-(n-period-1>=0?closeArr[n-period-1]:prevClose)),\n        Math.abs(lowArr[n-period]-(n-period-1>=0?closeArr[n-period-1]:prevClose))\n      );\n    }\n    if (n >= period-1) {\n      const mean = sumClose/period;\n      const stdev = Math.sqrt(sumCloseSq/period-mean*mean);\n      bbMidArr[n] = mean;\n      bbUpperArr[n] = mean+multBB*stdev;\n      bbLowerArr[n] = mean-multBB*stdev;\n      volAvgArr[n] = sumVol/period;\n      atrArr[n] = sumATR/period;\n    }\n    prevClose = closeArr[n];\n  }\n  return {\n    mid: bbMidArr,\n    upper: bbUpperArr,\n    lower: bbLowerArr,\n    volAvg: volAvgArr,\n    atr: atrArr\n  };\n}\n\nfunction calcMACD(valuesArr, fast = 12, slow = 26, signal = 9) {\n  const emaFastArr = calcEMA(valuesArr, fast);\n  const emaSlowArr = calcEMA(valuesArr, slow);\n  const macdArr    = valuesArr.map((_, i) => (\n    emaFastArr[i] !== undefined && emaSlowArr[i] !== undefined\n      ? emaFastArr[i] - emaSlowArr[i]\n      : undefined\n  ));\n  const signalArr = calcEMA(macdArr.map(v=>v===undefined?0:v), signal);\n  const histArr = macdArr.map((v,i)=>(\n    v !== undefined && signalArr[i] !== undefined\n      ? v - signalArr[i]\n      : undefined\n  ));\n  return { macd: macdArr, signal: signalArr, hist: histArr };\n}\n\nfunction calcADX(highArr, lowArr, closeArr, period=14) {\n  const len = highArr.length;\n  const dxArr = Array(len).fill(undefined),\n        adxArr = Array(len).fill(undefined),\n        plusDIarr = Array(len).fill(undefined),\n        minusDIarr = Array(len).fill(undefined);\n\n  let trList = [], pdmList = [], ndmList = [];\n  for(let i=1;i<len;i++) {\n    const tr = Math.max(\n      highArr[i] - lowArr[i],\n      Math.abs(highArr[i] - closeArr[i-1]),\n      Math.abs(lowArr[i] - closeArr[i-1])\n    );\n    trList.push(tr);\n    const pdm = (highArr[i]-highArr[i-1]) > (lowArr[i-1]-lowArr[i]) && (highArr[i]-highArr[i-1])>0 ? highArr[i]-highArr[i-1]:0;\n    const ndm = (lowArr[i-1]-lowArr[i]) > (highArr[i]-highArr[i-1]) && (lowArr[i-1]-lowArr[i])>0 ? lowArr[i-1]-lowArr[i]:0;\n    pdmList.push(pdm); ndmList.push(ndm);\n  }\n  function smma(arr, period) {\n    let o = Array(arr.length).fill(undefined);\n    let sum = arr.slice(0, period).reduce((a,b)=>a+b, 0);\n    o[period-1] = sum/period;\n    for(let z=period;z<arr.length;z++)\n      o[z] = ((o[z-1]*(period-1))+arr[z])/period;\n    return o;\n  }\n  const atrArr = smma(trList, period);\n  const pdiArr = smma(pdmList, period).map((v,i)=>v!==undefined && atrArr[i]!==undefined?100*v/atrArr[i]:undefined);\n  const ndiArr = smma(ndmList, period).map((v,i)=>v!==undefined && atrArr[i]!==undefined?100*v/atrArr[i]:undefined);\n  for(let j=period-1;j<atrArr.length;j++) {\n    if (pdiArr[j]!==undefined && ndiArr[j]!==undefined) {\n      const sum = pdiArr[j]+ndiArr[j];\n      const dx = sum===0 ? 0 : 100*Math.abs(pdiArr[j]-ndiArr[j])/sum;\n      dxArr[j+1] = dx;\n      plusDIarr[j+1] = pdiArr[j];\n      minusDIarr[j+1] = ndiArr[j];\n    }\n  }\n  const adxSmoothed = smma(dxArr.map(x=>x===undefined?0:x),period);\n  for(let k=2*period-1;k<adxSmoothed.length;k++) {\n    adxArr[k+1] = adxSmoothed[k];\n  }\n  return { adx: adxArr, plusDI: plusDIarr, minusDI: minusDIarr };\n}\n\nfunction calcSupertrend(highArr, lowArr, closeArr, period=10, mult=3) {\n  const atrArr = calcEMA(highArr.map((_, i) => {\n    return Math.max(\n      highArr[i] - lowArr[i],\n      Math.abs(highArr[i] - closeArr[i-1] || highArr[i]-lowArr[i]),\n      Math.abs(lowArr[i] - closeArr[i-1] || highArr[i]-lowArr[i])\n    );\n  }), period);\n\n  const basicUpper = highArr.map((h, i) => ((h + lowArr[i]) / 2) + mult * (atrArr[i] || 0));\n  const basicLower = lowArr.map((l, i) => ((highArr[i] + l) / 2) - mult * (atrArr[i] || 0));\n  const supertrendArr = Array(closeArr.length).fill(null);\n  let prevSuper = null;\n\n  for (let i = 0; i < closeArr.length; i++) {\n    if (i === 0) {\n      supertrendArr[i] = basicUpper[i];\n      prevSuper = basicUpper[i];\n      continue;\n    }\n    let currSuper;\n    if (closeArr[i - 1] <= prevSuper) currSuper = Math.min(basicUpper[i], prevSuper);\n    else currSuper = basicUpper[i];\n    if (closeArr[i] > currSuper) prevSuper = basicLower[i];\n    else prevSuper = currSuper;\n    supertrendArr[i] = prevSuper;\n  }\n  // Dirección: alcista (1) si el cierre está por arriba, bajista (-1) si abajo.\n  const trendArr = closeArr.map((c, i) => (c > supertrendArr[i] ? 1 : -1));\n  return { supertrendArr, trendArr };\n}\n\n// --------------- Indicadores por array ---------------\nconst ema9Array   = calcEMA(closeArray, 9);\nconst ema21Array  = calcEMA(closeArray, 21);\nconst ema50Array  = calcEMA(closeArray, 50);\nconst ema200Array = calcEMA(closeArray, 200);\nconst rsi14Array  = calcRSIWilder(closeArray, 14);\n\nconst {mid: bbMidArray, upper: bbUpArray, lower: bbDnArray, volAvg: volAvg20Array, atr: atr14Array} = \n  calcBBVolATR(closeArray, highArray, lowArray, volumeArray, 20, 2);\n\nconst macdObj = calcMACD(closeArray);\nconst adxResult = calcADX(highArray, lowArray, closeArray, 14);\nconst supertrendObj = calcSupertrend(highArray, lowArray, closeArray, 10, 3);\n\nconst idxLast = closeArray.length - 1;\n\n// --------------- Última vela enriquecida -----------------\nconst dataLast = {\n  ...items[idxLast].json,\n  ema9:        Number(ema9Array[idxLast]?.toFixed(6)),\n  ema21:       Number(ema21Array[idxLast]?.toFixed(6)),\n  ema50:       Number(ema50Array[idxLast]?.toFixed(6)),\n  ema200:      Number(ema200Array[idxLast]?.toFixed(6)),\n  rsi14:       Number(rsi14Array[idxLast]?.toFixed(4)),\n  bb_mid:      Number(bbMidArray[idxLast]?.toFixed(2)),\n  bb_up:       Number(bbUpArray[idxLast]?.toFixed(2)),\n  bb_dn:       Number(bbDnArray[idxLast]?.toFixed(2)),\n  vol_avg20:   Number(volAvg20Array[idxLast]?.toFixed(4)),\n  atr14:       Number(atr14Array[idxLast]?.toFixed(4)),\n  macd:        Number(macdObj.macd[idxLast]?.toFixed(6)),\n  macd_signal: Number(macdObj.signal[idxLast]?.toFixed(6)),\n  macd_hist:   Number(macdObj.hist[idxLast]?.toFixed(6)),\n  adx14:       Number(adxResult.adx[idxLast]?.toFixed(4)),\n  di_plus:     Number(adxResult.plusDI[idxLast]?.toFixed(4)),\n  di_minus:    Number(adxResult.minusDI[idxLast]?.toFixed(4)),\n  supertrend:  Number(supertrendObj.supertrendArr[idxLast]?.toFixed(2)),\n  supertrend_dir: supertrendObj.trendArr[idxLast], // 1=alcista, -1=bajista\n};\n\n// ---------- Sistema de señales con variables claramente diferenciadas ----------\nfunction percentDiff(a, b) {\n  return Math.abs((a - b) / ((a + b) / 2)) * 100;\n}\n\nconst closeLast  = Number(dataLast.close);\nconst ema9Last   = Number(dataLast.ema9);\nconst ema21Last  = Number(dataLast.ema21);\nconst ema50Last  = Number(dataLast.ema50);\nconst ema200Last = Number(dataLast.ema200);\nconst rsi14Last  = Number(dataLast.rsi14);\nconst bbMidLast  = Number(dataLast.bb_mid);\nconst macdLast   = Number(dataLast.macd);\nconst macdSignalLast = Number(dataLast.macd_signal);\nconst macdHistLast   = Number(dataLast.macd_hist);\nconst supertrendDirLast = Number(dataLast.supertrend_dir);\nconst diPlusLast  = Number(dataLast.di_plus);\nconst diMinusLast = Number(dataLast.di_minus);\nconst adx14Last   = Number(dataLast.adx14);\nconst volumeLast  = Number(dataLast.volume);\nconst volAvg20Last= Number(dataLast.vol_avg20);\nconst atr14Last   = Number(dataLast.atr14);\nconst openLast    = Number(dataLast.open);\nconst highLast    = Number(dataLast.high);\nconst lowLast     = Number(dataLast.low);\n\nconst totalRangeLast = Math.abs(highLast-lowLast);\nconst candleBodyLast = Math.abs(closeLast - openLast);\nconst upperWickLast = highLast - Math.max(closeLast, openLast);\nconst lowerWickLast = Math.min(closeLast, openLast) - lowLast;\n\nconst critVolume = volumeLast >= 0.8 * volAvg20Last;\nconst critATR = atr14Last >= 0.67 * (atr14Last); // Puedes cambiar el denominador si tienes un ATR promedio real\n\n// ---- Señal ----\n\nlet signalOut = \"\";\nlet explanationOut = \"\";\nlet ratioOut = \"\";\nlet pricesOut = \"\";\nlet trendOut = \"\";\nlet entryTypeOut = \"\";\nlet signalTextOut = \"\";\n\n// --- Señal de tendencia LONG ---\nconst emasLongCond = (closeLast > ema9Last && closeLast > ema21Last && closeLast > ema50Last);\nconst ema200LongCond = (closeLast >= ema200Last || \n  (ema50Last < ema200Last && percentDiff(ema50Last, ema200Last) < 0.5 && ema9Last>ema21Last && ema21Last>ema50Last)\n);\nconst longSignal = (\n  emasLongCond &&\n  ema200LongCond &&\n  ((ema50Last >= ema200Last) ? true : percentDiff(ema50Last, ema200Last) < 0.5) &&\n  (rsi14Last > 60 || (rsi14Last >= 58 && macdLast > macdSignalLast && macdHistLast > 0)) &&\n  closeLast > bbMidLast &&\n  macdLast > macdSignalLast && macdHistLast > 0 &&\n  (supertrendDirLast === 1 || supertrendDirLast === null) &&\n  diPlusLast > diMinusLast && adx14Last >= 19 &&\n  critVolume && critATR\n);\n\n// --- Señal de tendencia SHORT ---\nconst emasShortCond = (closeLast < ema9Last && closeLast < ema21Last && closeLast < ema50Last);\nconst ema200ShortCond = (closeLast <= ema200Last || \n  (ema50Last > ema200Last && percentDiff(ema50Last, ema200Last) < 0.5 && ema9Last<ema21Last && ema21Last<ema50Last)\n);\nconst shortSignal = (\n  emasShortCond &&\n  ema200ShortCond &&\n  ((ema50Last <= ema200Last) ? true : percentDiff(ema50Last, ema200Last) < 0.5) &&\n  (rsi14Last < 40 || (rsi14Last <= 42 && macdLast < macdSignalLast && macdHistLast < 0)) &&\n  closeLast < bbMidLast &&\n  macdLast < macdSignalLast && macdHistLast < 0 &&\n  (supertrendDirLast === -1 || supertrendDirLast === null) &&\n  diMinusLast > diPlusLast && adx14Last >= 19 &&\n  critVolume && critATR\n);\n\n// ---- FILTROS NO TRADE ----\nlet reasonNoTrade = \"\";\nif (\n     (rsi14Last>42 && rsi14Last<58)\n  || (volumeLast < 0.8*volAvg20Last)\n  || adx14Last<19\n  || ((candleBodyLast < 0.4*totalRangeLast) && (upperWickLast+lowerWickLast > 1.5*atr14Last))\n  || (atr14Last > 2*atr14Last)\n  || isNaN(closeLast)||isNaN(ema9Last)||isNaN(ema21Last)||isNaN(ema50Last)||isNaN(ema200Last)||\n     isNaN(rsi14Last)||isNaN(bbMidLast)||isNaN(macdLast)||isNaN(macdSignalLast)||isNaN(macdHistLast)||\n     isNaN(diPlusLast)||isNaN(diMinusLast)||isNaN(adx14Last)||isNaN(volumeLast)||isNaN(volAvg20Last)||isNaN(atr14Last)\n) {\n  reasonNoTrade = \"Filtro NO TRADE: Zona neutra RSI, volumen/ATR bajo o exceso, manipulación o falta datos.\";\n}\n\n// ---- SL-TP dinámico ----\nfunction calcSLTP(basePrice, atr, strength){\n  let stopLoss = Math.max(basePrice*0.005, 0.3*atr);\n  let multiplier = 1;\n  if(strength === \"fuerte\") multiplier = 2;\n  if(strength === \"extrema\") multiplier = 3;\n  let takeProfit = stopLoss * multiplier;\n  return {SL: +stopLoss.toFixed(2), TP: +(takeProfit+stopLoss).toFixed(2)};\n}\n\n// --- OUTPUT DE LA SEÑAL Y EL MENSAJE FINAL ---\nif(reasonNoTrade){\n  signalOut = \"NO TRADE\";\n  explanationOut = reasonNoTrade;\n  signalTextOut = `NO TRADE. ${explanationOut}`;\n}else if(longSignal){\n  signalOut = \"LONG\";\n  if(ema50Last > ema200Last) {trendOut = \"alcista\"; entryTypeOut = \"tendencia mayor confirmada\";}\n  else {trendOut = \"alcista\"; entryTypeOut = \"reversal anticipado\";}\n  let sltpVal = calcSLTP(closeLast, atr14Last, adx14Last>30?\"fuerte\":adx14Last>45?\"extrema\":\"normal\");\n  ratioOut = adx14Last>30?\"1:2\":\"1:1\";\n  explanationOut = `Cierre ${closeLast}>EMAs, RSI ${rsi14Last}, MACD/Hist ${macdLast}/${macdHistLast}, volumen ${volumeLast}. ADX ${adx14Last}.`;\n  pricesOut = `SL: ${(closeLast-sltpVal.SL).toFixed(2)}, TP: ${(closeLast+sltpVal.TP).toFixed(2)}`;\n  signalTextOut = `LONG. ${explanationOut} Ratio SL-TP sugerido ${ratioOut} (${pricesOut}). Tendencia ${trendOut}. Entrada por ${entryTypeOut}.`\n}else if(shortSignal){\n  signalOut = \"SHORT\";\n  if(ema50Last < ema200Last) {trendOut = \"bajista\"; entryTypeOut = \"tendencia mayor confirmada\";}\n  else {trendOut = \"bajista\"; entryTypeOut = \"reversal anticipado\";}\n  let sltpVal = calcSLTP(closeLast, atr14Last, adx14Last>30?\"fuerte\":adx14Last>45?\"extrema\":\"normal\");\n  ratioOut = adx14Last>30?\"1:2\":\"1:1\";\n  explanationOut = `Cierre ${closeLast}<EMAs, RSI ${rsi14Last}, MACD/Hist ${macdLast}/${macdHistLast}, volumen ${volumeLast}. ADX ${adx14Last}.`;\n  pricesOut = `SL: ${(closeLast+sltpVal.SL).toFixed(2)}, TP: ${(closeLast-sltpVal.TP).toFixed(2)}`;\n  signalTextOut = `SHORT. ${explanationOut} Ratio SL-TP sugerido ${ratioOut} (${pricesOut}). Tendencia ${trendOut}. Entrada por ${entryTypeOut}.`\n}else{\n  signalOut = \"NO TRADE\";\n  explanationOut = \"Condiciones no cumplen para LONG ni SHORT, posible zona neutra o conflicto de señales.\";\n  signalTextOut = `NO TRADE. ${explanationOut}`;\n}\n\n// ---------- OUTPUT FINAL -----------\nreturn [\n  {\n    json: {\n      ...dataLast,\n      signal: signalOut,\n      explanation: explanationOut,\n      sl_tp: ratioOut,\n      prices: pricesOut,\n      trend: trendOut,\n      entry_type: entryTypeOut,\n      signal_text: signalTextOut\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1660,
+        540
+      ],
+      "id": "755eedda-35c2-486b-a501-76aecfc2a7e9",
+      "name": "estricto",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.binance.com/api/v3/klines",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "BTCUSDC"
+            },
+            {
+              "name": "interval",
+              "value": "15m"
+            },
+            {
+              "name": "limit",
+              "value": "200"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        540
+      ],
+      "id": "576352df-6db6-448c-b0ca-ff97cd99558f",
+      "name": "GET OHLC",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={\n  \"time\": {{ $json.time }},\n  \"open\": {{ $json.open }},\n  \"high\": {{ $json.high }},\n  \"low\": {{ $json.low }},\n  \"close\": {{ $json.close }},\n  \"volume\": {{ $json.volume }},\n  \"ema9\": {{ $json.ema9 }},\n  \"ema21\": {{ $json.ema21 }},\n  \"ema50\": {{ $json.ema50 }},\n  \"ema200\": {{ $json.ema200 }},\n  \"rsi14\": {{ $json.rsi14 }},\n  \"bb_mid\": {{ $json.bb_mid }},\n  \"bb_up\": {{ $json.bb_up }},\n  \"bb_dn\": {{ $json.bb_dn }},\n  \"vol_avg20\": {{ $json.vol_avg20 }},\n  \"atr14\": {{ $json.atr14 }},\n  \"macd\": {{ $json.macd }},\n  \"macd_signal\": {{ $json.macd_signal }},\n  \"macd_hist\": {{ $json.macd_hist }},\n  \"adx14\": {{ $json.adx14 }},\n  \"di_plus\": {{ $json.di_plus }},\n  \"di_minus\": {{ $json.di_minus }},\n  \"supertrend\": {{ $json.supertrend }},\n  \"supertrend_dir\": {{ $json.supertrend_dir }},\n  \n}\n",
+        "options": {
+          "systemMessage": "=Eres un agente AI de trading avanzado. Recibes datos OHLC y técnicos de la última vela de BTCUSDC en temporalidad de 15 minutos.\n\nTu tarea es analizar mediante SISTEMA DE SCORING PONDERADO y emitir una señal precisa: \n\nFORMATO RESPUESTA REQUERIDO:\n\"[LONG/SHORT] [FUERTE/MODERADA]. Score: X/100 (T:XX, M:XX, V:XX, C:XX). \n[Explicación técnica concisa con números específicos - máximo 2 frases]. \nContexto: [Tendencia mayor confirmada / Reversal anticipado]. \nRatio SL-TP: 1:X (SL=precio, TP=precio)\"\n\nO\n\n\"NO TRADE. Score: X/100. [Razón principal - máximo 1 frase]\"\n\nMETODOLOGÍA DE ANÁLISIS:\n1. Aplicar filtros eliminatorios de calidad/manipulación\n2. Calcular scoring ponderado por categorías (Tendencia 35pts, Momentum 25pts, Volumen 20pts, Confirmaciones 20pts)\n3. Clasificar señal según puntuación total\n4. Adaptar SL-TP según fuerza de señal y volatilidad (ATR14)\n5. Determinar contexto de mercado (tendencia confirmada vs reversal anticipado)\n\nUMBRALES DE DECISIÓN:\n- ≥75 puntos = SEÑAL FUERTE (ratio 1:2.5 a 1:3)\n- 60-74 puntos = SEÑAL MODERADA (ratio 1:1.5 a 1:2)  \n- <60 puntos = NO TRADE\n\nCONDICIÓN ESPECIAL: Solo responde si la señal difiere de prev_signal. Si es idéntica, responde vacío (\"\").\n\nReglas detalladas de scoring y filtros:\n\nANÁLISIS BTCUSDC CON SISTEMA DE SCORING PONDERADO (0-100 puntos):\n\n=== PASO 1: FILTROS ELIMINATORIOS ===\nSi cualquiera de estos se cumple → automático \"NO TRADE\":\n\n• Volumen < 70% vol_avg20 Y no creciente vs 2 velas previas\n• RSI14 entre 42-58 sin momentum fortísimo en otros indicadores\n• Señales contradictorias mayores detectadas\n• ADX14 < 17 sin momentum claro en tendencia\n• Cuerpo vela < 40% rango total Y mechas > 1.5x ATR14\n• ATR14 > 2x ATR20 promedio (volatilidad anómala)\n• Volumen cayendo 3 velas consecutivas Y <70% vol_avg20 en todas\n• Misma señal en 3 de últimas 4 velas sin nuevo máximo/mínimo\n• Gap > 1% precio cierre anterior (salvo confluencia total)\n• Divergencia clara precio vs RSI/MACD\n\n=== PASO 2: CÁLCULO DE SCORING ===\n\n**TENDENCIA (35 puntos máximo):**\nLONG:\n• Close > EMA9 > EMA21 > EMA50 (perfecta alineación): 20pts\n• Close > EMA9 > EMA21 + Close > EMA50 (buena): 15pts  \n• Close > EMA9 + Close > EMA21 (básica): 10pts\n• Solo Close > EMA9: 5pts\n\n• EMA50 > EMA200 + Close > EMA200 (tendencia mayor confirmada): 15pts\n• Diferencia EMA50-EMA200 < 0.5% + Close ≥ EMA200 (reversal fuerte): 12pts\n• Diferencia EMA50-EMA200 < 1% + Close ≥ EMA200 (reversal moderado): 8pts\n• Solo Close > EMA200: 5pts\n\nSHORT: (invertir todas las condiciones)\n\n**MOMENTUM (25 puntos máximo):**\nLONG:\n• RSI14 ≥ 65: 15pts\n• RSI14 ≥ 60: 12pts  \n• RSI14 58-60: 8pts\n• RSI14 55-58: 4pts\n\n• MACD > signal + histograma > 0.1 (fuerte): 10pts\n• MACD > signal + histograma > 0: 7pts\n• Solo MACD > signal: 5pts\n\nSHORT:\n• RSI14 ≤ 35: 15pts\n• RSI14 ≤ 40: 12pts\n• RSI14 40-42: 8pts  \n• RSI14 42-45: 4pts\n• MACD < signal + histograma < -0.1: 10pts, etc.\n\n**VOLUMEN (20 puntos máximo):**\n• Volumen ≥ 120% vol_avg20: 12pts\n• Volumen ≥ 100% vol_avg20: 10pts\n• Volumen ≥ 90% vol_avg20: 8pts\n• Volumen ≥ 80% vol_avg20: 6pts\n\n• Volumen creciente vs 2 velas previas (ambas): 8pts\n• Creciente vs 1 vela previa: 5pts\n• Solo vs segunda vela previa: 3pts\n\n**CONFIRMACIONES (20 puntos máximo):**\nLONG:\n• Close > bb_mid: 5pts\n• DI+ > DI- + ADX ≥ 25: 8pts\n• DI+ > DI- + ADX ≥ 20: 6pts  \n• DI+ > DI- + ADX ≥ 18: 4pts\n• SuperTrend_dir = 1: 4pts\n• ATR14 ≥ 80% ATR_max_reciente: 3pts\n• ATR14 ≥ 67% ATR_max_reciente: 2pts\n\nSHORT: (invertir condiciones DI y SuperTrend)\n\n=== PASO 3: DECISIÓN FINAL ===\n\n**SCORING TOTAL:**\n• ≥ 75 puntos = SEÑAL FUERTE\n• 60-74 puntos = SEÑAL MODERADA  \n• < 60 puntos = NO TRADE\n\n**RATIOS SL-TP SEGÚN FUERZA:**\n• SEÑAL FUERTE: 1:2.5 o 1:3 (según ATR14)\n• SEÑAL MODERADA: 1:1.5 o 1:2 (según ATR14)\n• SL mínimo: mayor entre 0.5% precio entrada o 30% ATR14\n\n=== FORMATO RESPUESTA ===\n\n**Para SEÑAL:**\n\"[LONG/SHORT] [FUERTE/MODERADA]. Score: X/100 (T:XX, M:XX, V:XX, C:XX). \n[Descripción técnica clave con números específicos]. \nContexto: [Tendencia mayor confirmada / Reversal anticipado].\nRatio SL-TP sugerido: 1:X (precios: SL=XXXX, TP=XXXX)\"\n\n**Para NO TRADE:**\n\"NO TRADE. Score: X/100. [Razón principal eliminatoria o score insuficiente]\"\n\n**CONDICIÓN ESPECIAL:**\nSolo responde si la señal es DIFERENTE a prev_signal. Si es igual, responde vacío (\"\").\n\n=== EJEMPLOS ===\n\n\"LONG FUERTE. Score: 78/100 (T:32, M:22, V:16, C:8). \nClose 43,250 > EMA9(43,100) > EMA21(42,900) > EMA50(42,700), EMA50>EMA200 confirmada. \nRSI 64, MACD 45>signal 38 histograma 7, volumen 135% promedio creciente. \nContexto: Tendencia mayor confirmada.\nRatio SL-TP sugerido: 1:2.5 (SL=42,600, TP=44,875)\"\n\n\"SHORT MODERADA. Score: 65/100 (T:28, M:18, V:12, C:7).\nClose 42,800 < EMA9(43,000), RSI 38, MACD negativo, volumen 95% promedio.\nContexto: Reversal anticipado.  \nRatio SL-TP sugerido: 1:2 (SL=43,200, TP=42,000)\"\n\n\"NO TRADE. Score: 45/100. RSI en zona neutra (52) y volumen solo 75% promedio sin crecimiento.\"\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        2820,
+        60
+      ],
+      "id": "55e1ec86-7008-4dbb-92f3-d723ba725c10",
+      "name": "Agente Interpretador de Senales1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================\n// BTCUSDC 15M TECHNICAL ANALYSIS SYSTEM\n// Scoring-based signal generation\n// ============================================\n\nfunction analyzeTechnicalSignal(data, prev_signal = null) {\n    const {\n        time, open, high, low, close, volume,\n        ema9, ema21, ema50, ema200, rsi14,\n        bb_mid, bb_up, bb_dn, vol_avg20, atr14,\n        macd, macd_signal, macd_hist,\n        adx14, di_plus, di_minus,\n        supertrend, supertrend_dir\n    } = data;\n\n    // ============================================\n    // STEP 1: ELIMINATION FILTERS\n    // ============================================\n    \n    // Missing critical data\n    if (!close || !ema9 || !ema21 || !ema50 || !volume || !vol_avg20) {\n        return { signal: \"NO TRADE\", reason: \"Missing critical data\", score: 0 };\n    }\n\n    // Volume filter\n    const vol_ratio = volume / vol_avg20;\n    if (vol_ratio < 0.7) {\n        return { signal: \"NO TRADE\", reason: \"Volume below 70% average\", score: 0 };\n    }\n\n    // RSI dead zone (without strong momentum)\n    if (rsi14 >= 42 && rsi14 <= 58) {\n        // Check if other momentum is extremely strong\n        const macd_strength = macd && macd_signal ? Math.abs(macd - macd_signal) : 0;\n        if (macd_strength < 0.2 && (!adx14 || adx14 < 25)) {\n            return { signal: \"NO TRADE\", reason: \"RSI neutral zone without momentum\", score: 0 };\n        }\n    }\n\n    // Manipulation detection - extreme wicks\n    const body_size = Math.abs(close - open);\n    const range_size = high - low;\n    const wick_size = (high - Math.max(open, close)) + (Math.min(open, close) - low);\n    \n    if (body_size < 0.4 * range_size && wick_size > 1.5 * atr14) {\n        return { signal: \"NO TRADE\", reason: \"Potential manipulation detected\", score: 0 };\n    }\n\n    // Extreme volatility\n    const atr_ratio = atr14 / (atr14 * 0.5); // Assuming normal ATR is half current\n    if (atr_ratio > 2) {\n        return { signal: \"NO TRADE\", reason: \"Abnormal volatility\", score: 0 };\n    }\n\n    // ============================================\n    // STEP 2: SCORING CALCULATION\n    // ============================================\n\n    let trend_score = 0;\n    let momentum_score = 0;\n    let volume_score = 0;\n    let confirmation_score = 0;\n    let signal_type = \"\";\n    let context = \"\";\n\n    // ============================================\n    // TREND SCORING (35 points max)\n    // ============================================\n    \n    // EMA alignment check\n    const long_ema_aligned = close > ema9 && ema9 > ema21 && ema21 > ema50;\n    const short_ema_aligned = close < ema9 && ema9 < ema21 && ema21 < ema50;\n    \n    // EMA200 relationship\n    const ema50_200_diff = ema200 ? Math.abs(ema50 - ema200) / ema200 * 100 : 0;\n    \n    // LONG trend scoring\n    if (close > ema9) {\n        if (long_ema_aligned) trend_score += 20;\n        else if (close > ema21 && close > ema50) trend_score += 15;\n        else if (close > ema21) trend_score += 10;\n        else trend_score += 5;\n        \n        // EMA200 relationship for LONG\n        if (ema200) {\n            if (ema50 > ema200 && close > ema200) {\n                trend_score += 15;\n                context = \"Tendencia mayor confirmada\";\n            } else if (ema50_200_diff < 0.5 && close >= ema200) {\n                trend_score += 12;\n                context = \"Reversal anticipado fuerte\";\n            } else if (ema50_200_diff < 1.0 && close >= ema200) {\n                trend_score += 8;\n                context = \"Reversal anticipado moderado\";\n            } else if (close > ema200) {\n                trend_score += 5;\n            }\n        }\n        signal_type = \"LONG\";\n    }\n    \n    // SHORT trend scoring\n    else if (close < ema9) {\n        if (short_ema_aligned) trend_score += 20;\n        else if (close < ema21 && close < ema50) trend_score += 15;\n        else if (close < ema21) trend_score += 10;\n        else trend_score += 5;\n        \n        // EMA200 relationship for SHORT\n        if (ema200) {\n            if (ema50 < ema200 && close < ema200) {\n                trend_score += 15;\n                context = \"Tendencia mayor confirmada\";\n            } else if (ema50_200_diff < 0.5 && close <= ema200) {\n                trend_score += 12;\n                context = \"Reversal anticipado fuerte\";\n            } else if (ema50_200_diff < 1.0 && close <= ema200) {\n                trend_score += 8;\n                context = \"Reversal anticipado moderado\";\n            } else if (close < ema200) {\n                trend_score += 5;\n            }\n        }\n        signal_type = \"SHORT\";\n    }\n\n    // ============================================\n    // MOMENTUM SCORING (25 points max)\n    // ============================================\n    \n    if (signal_type === \"LONG\") {\n        // RSI scoring for LONG\n        if (rsi14 >= 65) momentum_score += 15;\n        else if (rsi14 >= 60) momentum_score += 12;\n        else if (rsi14 >= 58) momentum_score += 8;\n        else if (rsi14 >= 55) momentum_score += 4;\n        \n        // MACD scoring for LONG\n        if (macd && macd_signal) {\n            if (macd > macd_signal && macd_hist > 0.1) momentum_score += 10;\n            else if (macd > macd_signal && macd_hist > 0) momentum_score += 7;\n            else if (macd > macd_signal) momentum_score += 5;\n        }\n    } else if (signal_type === \"SHORT\") {\n        // RSI scoring for SHORT\n        if (rsi14 <= 35) momentum_score += 15;\n        else if (rsi14 <= 40) momentum_score += 12;\n        else if (rsi14 <= 42) momentum_score += 8;\n        else if (rsi14 <= 45) momentum_score += 4;\n        \n        // MACD scoring for SHORT\n        if (macd && macd_signal) {\n            if (macd < macd_signal && macd_hist < -0.1) momentum_score += 10;\n            else if (macd < macd_signal && macd_hist < 0) momentum_score += 7;\n            else if (macd < macd_signal) momentum_score += 5;\n        }\n    }\n\n    // ============================================\n    // VOLUME SCORING (20 points max)\n    // ============================================\n    \n    // Volume ratio scoring\n    if (vol_ratio >= 1.2) volume_score += 12;\n    else if (vol_ratio >= 1.0) volume_score += 10;\n    else if (vol_ratio >= 0.9) volume_score += 8;\n    else if (vol_ratio >= 0.8) volume_score += 6;\n    \n    // Volume trend scoring (simplified - would need previous volumes)\n    // For now, assume moderate scoring\n    volume_score += 5;\n\n    // ============================================\n    // CONFIRMATION SCORING (20 points max)\n    // ============================================\n    \n    // Bollinger Bands\n    if (signal_type === \"LONG\" && close > bb_mid) confirmation_score += 5;\n    else if (signal_type === \"SHORT\" && close < bb_mid) confirmation_score += 5;\n    \n    // ADX/DI scoring\n    if (adx14 && di_plus && di_minus) {\n        if (signal_type === \"LONG\" && di_plus > di_minus) {\n            if (adx14 >= 25) confirmation_score += 8;\n            else if (adx14 >= 20) confirmation_score += 6;\n            else if (adx14 >= 18) confirmation_score += 4;\n        } else if (signal_type === \"SHORT\" && di_minus > di_plus) {\n            if (adx14 >= 25) confirmation_score += 8;\n            else if (adx14 >= 20) confirmation_score += 6;\n            else if (adx14 >= 18) confirmation_score += 4;\n        }\n    }\n    \n    // SuperTrend\n    if (supertrend_dir) {\n        if ((signal_type === \"LONG\" && supertrend_dir === 1) || \n            (signal_type === \"SHORT\" && supertrend_dir === -1)) {\n            confirmation_score += 4;\n        }\n    }\n    \n    // ATR relative strength (simplified)\n    confirmation_score += 2;\n\n    // ============================================\n    // STEP 3: FINAL DECISION\n    // ============================================\n    \n    const total_score = Math.min(trend_score, 35) + Math.min(momentum_score, 25) + \n                       Math.min(volume_score, 20) + Math.min(confirmation_score, 20);\n    \n    let signal_strength = \"\";\n    let sl_tp_ratio = \"\";\n    let sl_price = 0;\n    let tp_price = 0;\n    \n    if (total_score >= 75) {\n        signal_strength = \"FUERTE\";\n        sl_tp_ratio = \"1:2.5\";\n    } else if (total_score >= 60) {\n        signal_strength = \"MODERADA\";\n        sl_tp_ratio = \"1:1.5\";\n    } else {\n        return { \n            signal: \"NO TRADE\", \n            reason: `Score insuficiente: ${total_score}/100`, \n            score: total_score \n        };\n    }\n    \n    // Calculate SL/TP prices\n    const sl_distance = Math.max(close * 0.005, atr14 * 0.3);\n    const tp_multiplier = signal_strength === \"FUERTE\" ? 2.5 : 1.5;\n    \n    if (signal_type === \"LONG\") {\n        sl_price = Math.round((close - sl_distance) * 100) / 100;\n        tp_price = Math.round((close + (sl_distance * tp_multiplier)) * 100) / 100;\n    } else {\n        sl_price = Math.round((close + sl_distance) * 100) / 100;\n        tp_price = Math.round((close - (sl_distance * tp_multiplier)) * 100) / 100;\n    }\n    \n    // Check if signal is different from previous\n    const current_signal = `${signal_type} ${signal_strength}`;\n    if (prev_signal && prev_signal === current_signal) {\n        return { signal: \"\", reason: \"Same signal as previous\", score: total_score };\n    }\n    \n    // Build response\n    const score_breakdown = `T:${Math.min(trend_score, 35)}, M:${Math.min(momentum_score, 25)}, V:${Math.min(volume_score, 20)}, C:${Math.min(confirmation_score, 20)}`;\n    \n    const technical_description = `Close ${close} vs EMA9(${ema9}), RSI ${rsi14}, MACD ${macd?.toFixed(2) || 'N/A'}, Vol ${Math.round(vol_ratio * 100)}% avg`;\n    \n    return {\n        signal: `${signal_type} ${signal_strength}`,\n        score: total_score,\n        score_breakdown: score_breakdown,\n        technical_description: technical_description,\n        context: context,\n        sl_tp_ratio: sl_tp_ratio,\n        sl_price: sl_price,\n        tp_price: tp_price,\n        formatted_response: `${signal_type} ${signal_strength}. Score: ${total_score}/100 (${score_breakdown}). ${technical_description}. Contexto: ${context}. Ratio SL-TP: ${sl_tp_ratio} (SL=${sl_price}, TP=${tp_price})`\n    };\n}\n\n// ============================================\n// PROCESS INPUT ITEMS (n8n Code Node requirement)\n// ============================================\n\nconst inputItems = $input.all();\nconst outputItems = inputItems.map(item => {\n    // get possible prev_signal from item.json.prev_signal or set null\n    const prev_signal = item.json.prev_signal || null;\n    const result = analyzeTechnicalSignal(item.json, prev_signal);\n    return { json: { ...item.json, ...result } }; // merge results into output\n});\n\nreturn outputItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        340
+      ],
+      "id": "baffb292-6b9f-4c05-8cf6-03708ca1b9ae",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst apiKey = \"yH966Io7slgF99bTRbNfdjyKhTvDcbvGEvdedpriEM6CgOEQ2iFVORyAFRLXFSv0\";\nconst apiSecret = \"5AYUsI2V39jLly1NkrwP41O4EaEZnKtXzjh60Bg89DuLQ6mJM5vpYGdmGy4RrD49\";\nconst limit = 500;\nconst timestamp = Date.now();\nconst recvWindow = 15000; \n\n// Remover el parámetro symbol del queryString\nconst queryString = `timestamp=${timestamp}&limit=${limit}&recvWindow=${recvWindow}`;\nconst signature = crypto.createHmac('sha256', apiSecret)\n  .update(queryString)\n  .digest('hex');\n\nreturn [\n  {\n    url: `https://fapi.binance.com/fapi/v1/userTrades?${queryString}&signature=${signature}`,\n    apiKey,\n    timestamp\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2040,
+        -400
+      ],
+      "id": "a6d50477-c82f-4521-b719-8651a5540f71",
+      "name": "url-apiKey-timestamp1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const FECHA_MINIMA = new Date(\"2025-06-11T00:00:00\");\nconst trades = $input.all();\n\nif (trades.length === 0) return [];\n\n// Función para convertir timestamp a formato DD/MM/YYYY HH:mm:ss\nfunction formatTimestamp(timestamp) {\n  const date = new Date(timestamp);\n  const day = String(date.getDate()).padStart(2, '0');\n  const month = String(date.getMonth() + 1).padStart(2, '0');\n  const year = date.getFullYear();\n  const hours = String(date.getHours()).padStart(2, '0');\n  const minutes = String(date.getMinutes()).padStart(2, '0');\n  const seconds = String(date.getSeconds()).padStart(2, '0');\n  \n  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;\n}\n\n// Calcular CumPnL y crear logs\nlet cumPnL = 0;\nconst logs = [];\n\n// Header del log\nlogs.push(\"=== TRADES DESDE 11/06/2025 ===\");\nlogs.push(\"SignalTime\\t\\tSide\\tEntryPrice\\tExitTime\\t\\tExitPrice\\tQuantity\\tQty\\t\\tFee\\t\\tNetPnL\\t\\tCumPnl\");\nlogs.push(\"=\".repeat(120));\n\ntrades.forEach(trade => {\n  const tradeTime = new Date(trade.json.time);\n  \n  if (tradeTime >= FECHA_MINIMA) {\n    const realizedPnl = Number(trade.json.realizedPnl || 0);\n    const commission = Number(trade.json.commission || 0);\n    const netPnL = realizedPnl - commission;\n    cumPnL += netPnL;\n    \n    const logLine = `${formatTimestamp(trade.json.time)}\\t${trade.json.side}\\t${trade.json.price}\\t\\t${formatTimestamp(trade.json.time)}\\t${trade.json.price}\\t\\t${trade.json.qty}\\t\\t${trade.json.quoteQty}\\t\\t${commission}\\t\\t${netPnL.toFixed(2)}\\t\\t${cumPnL.toFixed(2)}`;\n    logs.push(logLine);\n  }\n});\n\nlogs.push(\"=\".repeat(120));\nlogs.push(`Total PnL Acumulado: ${cumPnL.toFixed(2)}`);\n\n// Mostrar todos los logs\nlogs.forEach(log => console.log(log));\n\n// Return original\nconst lastTrade = trades[trades.length - 1];\nreturn [{\n  ...lastTrade,\n  json: {\n    ...lastTrade.json,\n    CumPnL: Number(cumPnL.toFixed(2))\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        540
+      ],
+      "id": "11306179-cbe8-4206-a13f-58354a4d0ad3",
+      "name": "Code3",
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI ADMIN",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI ADMIN",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "SOLO MENSAJES",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Only Prompt": {
+      "main": [
+        [
+          {
+            "node": "Flag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Audio URL": {
+      "main": [
+        [
+          {
+            "node": "Download Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Audio": {
+      "main": [
+        [
+          {
+            "node": "Transcribir audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribir audio": {
+      "main": [
+        [
+          {
+            "node": "Audio Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio Prompt": {
+      "main": [
+        [
+          {
+            "node": "Flag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Generate Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond with Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Audio": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Respond with Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Image URL": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Analizar Imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image add Text prompt": {
+      "main": [
+        [
+          {
+            "node": "Flag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flag": {
+      "main": [
+        [
+          {
+            "node": "AI ADMIN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI SYNAPTEK",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI SYNAPTEK": {
+      "main": [
+        [
+          {
+            "node": "RESPUESTA CLIENTE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ADMIN O CLIENTE": {
+      "main": [
+        [
+          {
+            "node": "ADMIN",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CLIENTE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "ADMIN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI ADMIN": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CLIENTE": {
+      "main": [
+        [
+          {
+            "node": "AI SYNAPTEK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI SYNAPTEK",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DATOS": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI SYNAPTEK",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SOLO MENSAJES": {
+      "main": [
+        [
+          {
+            "node": "ADMIN O CLIENTE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ADMIN": {
+      "main": [
+        [
+          {
+            "node": "Get Audio URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Text Only Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analizar Imagen": {
+      "main": [
+        [
+          {
+            "node": "Image add Text prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail SEND": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI ADMIN",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail GET": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI ADMIN",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DATOS READ": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI ADMIN",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TRADES": {
+      "main": [
+        [
+          {
+            "node": "LogTrades",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond with Text": {
+      "main": [
+        []
+      ]
+    },
+    "LogTrades": {
+      "main": [
+        [
+          {
+            "node": "BACKTESTER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "url-apiKey-timestamp1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BACKTESTER": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Business Cloud1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BACKTESTER READ": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI ADMIN",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        []
+      ]
+    },
+    "15 MIN1": {
+      "main": [
+        [
+          {
+            "node": "GET OHLC1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "url-apiKey-timestamp1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET OHLC1": {
+      "main": [
+        [
+          {
+            "node": "MAPEAR VELAS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ULTIMA VELA": {
+      "main": [
+        [
+          {
+            "node": "Agente Interpretador de Senales1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GENERAR INDICADORES": {
+      "main": [
+        [
+          {
+            "node": "ULTIMA VELA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MAPEAR VELAS": {
+      "main": [
+        [
+          {
+            "node": "GENERAR INDICADORES",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Interpretador de Senales1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente Interpretador de Senales1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Interpretador de Senales": {
+      "main": [
+        []
+      ]
+    },
+    "GET OHLC": {
+      "main": [
+        [
+          {
+            "node": "estricto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Interpretador de Senales1": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Business Cloud",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "url-apiKey-timestamp1": {
+      "main": [
+        [
+          {
+            "node": "TRADES",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {
+    "node:15 MIN": {
+      "recurrenceRules": []
+    },
+    "node:15 MIN1": {
+      "recurrenceRules": []
+    }
+  },
+  "pinData": {
+    "15 MIN1": [
+      {
+        "json": {
+          "timestamp": "2025-06-17T21:45:00.003-05:00",
+          "Readable date": "June 17th 2025, 9:45:00 pm",
+          "Readable time": "9:45:00 pm",
+          "Day of week": "Tuesday",
+          "Year": "2025",
+          "Month": "June",
+          "Day of month": "17",
+          "Hour": "21",
+          "Minute": "45",
+          "Second": "00",
+          "Timezone": "America/Lima (UTC-05:00)"
+        }
+      }
+    ]
+  },
+  "triggerCount": 1,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
