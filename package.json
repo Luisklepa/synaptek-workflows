@@ -1,0 +1,103 @@
+{
+  "name": "synaptek-workflows",
+  "version": "1.0.0",
+  "description": "Colección de workflows de n8n para automatización de procesos empresariales, generación de contenido y análisis de trading",
+  "main": "README.md",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs": "echo \"Documentación disponible en /docs\"",
+    "validate": "echo \"Validando workflows...\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Luisklepa/synaptek-workflows.git"
+  },
+  "keywords": [
+    "n8n",
+    "workflows",
+    "automation",
+    "trading",
+    "whatsapp",
+    "tiktok",
+    "podcast",
+    "ai",
+    "openai",
+    "binance",
+    "google-sheets",
+    "assemblyai",
+    "gemini"
+  ],
+  "author": {
+    "name": "Luis Eduardo Klepatzky Portocarrero",
+    "email": "Luisklepa@gmail.com",
+    "url": "https://github.com/Luisklepa"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Luisklepa/synaptek-workflows/issues"
+  },
+  "homepage": "https://github.com/Luisklepa/synaptek-workflows#readme",
+  "devDependencies": {},
+  "dependencies": {},
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "os": [
+    "linux",
+    "darwin",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "workflows/",
+    "docs/",
+    "examples/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "CODE_OF_CONDUCT.md"
+  ],
+  "directories": {
+    "workflows": "./workflows",
+    "docs": "./docs",
+    "examples": "./examples"
+  },
+  "workflows": {
+    "podcast-to-tiktok": "./workflows/podcast-to-tiktok.json",
+    "trading-pipeline": "./workflows/trading-pipeline.json",
+    "trading-signals": "./workflows/trading-signals.json",
+    "whatsapp-assistant": "./workflows/whatsapp-assistant.json"
+  },
+  "apis": {
+    "required": [
+      "openai",
+      "google-sheets",
+      "whatsapp-business",
+      "binance",
+      "assemblyai",
+      "gemini"
+    ],
+    "optional": [
+      "gmail",
+      "tiktok",
+      "andynocode"
+    ]
+  },
+  "metrics": {
+    "efficiency": {
+      "podcast-to-tiktok": "80-95%",
+      "trading-pipeline": "60-80%",
+      "trading-signals": "60-80%",
+      "whatsapp-assistant": "50-70%"
+    }
+  }
+}

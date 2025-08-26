@@ -1,0 +1,103 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validar Workflows
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Validate JSON files
+      run: |
+        echo "Validando archivos JSON..."
+        for file in workflows/*.json; do
+          echo "Validando $file"
+          node -e "JSON.parse(require('fs').readFileSync('$file', 'utf8')); console.log('✅ $file es válido')"
+        done
+        
+    - name: Check file structure
+      run: |
+        echo "Verificando estructura de archivos..."
+        test -f README.md && echo "✅ README.md existe"
+        test -f LICENSE && echo "✅ LICENSE existe"
+        test -d workflows && echo "✅ Carpeta workflows existe"
+        test -d docs && echo "✅ Carpeta docs existe"
+        
+    - name: Validate package.json
+      run: |
+        echo "Validando package.json..."
+        node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8')); console.log('✅ package.json es válido')"
+
+  security:
+    runs-on: ubuntu-latest
+    name: Análisis de Seguridad
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run security scan
+      run: |
+        echo "🔍 Escaneando archivos en busca de credenciales..."
+        if grep -r "api_key\|password\|secret\|token" . --exclude-dir=.git --exclude=*.md; then
+          echo "⚠️  Posibles credenciales encontradas. Revisa los archivos."
+          exit 1
+        else
+          echo "✅ No se encontraron credenciales expuestas"
+        fi
+
+  documentation:
+    runs-on: ubuntu-latest
+    name: Validar Documentación
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check documentation
+      run: |
+        echo "📚 Validando documentación..."
+        test -f README.md && echo "✅ README.md presente"
+        test -f CONTRIBUTING.md && echo "✅ CONTRIBUTING.md presente"
+        test -f SECURITY.md && echo "✅ SECURITY.md presente"
+        test -f CODE_OF_CONDUCT.md && echo "✅ CODE_OF_CONDUCT.md presente"
+        test -f CHANGELOG.md && echo "✅ CHANGELOG.md presente"
+
+  deploy:
+    needs: [validate, security, documentation]
+    runs-on: ubuntu-latest
+    name: Desplegar a GitHub Pages
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: '.'
+        
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
